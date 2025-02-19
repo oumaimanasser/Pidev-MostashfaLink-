@@ -1,73 +1,79 @@
-# 🚑 Mostachfa LINK 🚨
+# [DashUI React with Vite & TypeScript Free Admin Template](https://dash-ui-react-vitejs-typescript.netlify.app/)
 
-![Mostachfa LINK Banner](https://via.placeholder.com/1200x300?text=Mostachfa+LINK+-+Revolutionizing+Emergency+Management)
+Dash UI - React with Vite & TypeScript Free admin / dashboard template created by [Codescandy](https://codescandy.com/) and available on Github
 
-Welcome to **Mostachfa LINK** – an intelligent, web-based emergency management system designed to transform hospital operations and save lives! 💡🏥
+![dash-ui-react-vitejs-typescript](https://user-images.githubusercontent.com/68774600/231716707-3da30d19-b826-4692-b03a-fed41376d250.jpg)
+
+## How to use DashUI?
+
+Clone the Dash UI repo:
+
+```
+git clone https://github.com/codescandy/dash-ui-react-vitejs-typescript.git
+```
+
+```
+cd dash-ui-react-vitejs-typescript
+```
+
+## 🚀 Getting Started
+
+### Installation 👨🏻‍💻
+
+1. Install all packages
+
+```
+npm i
+```
+
+2. Run Development Server
+
+```
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) with your browser to see the result.
+
+3. Build your project
+
+```
+npm run build
+```
+
+4. Build preview
+
+```
+npm run preview
+npm run serve
+```
+
+## Deploy on Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcodescandy%2Fdashui-free-nextjs-admin-template.git&project-name=dashui-nextjs-admin-dashboard&repository-name=dashui-free-nextjs-admin-template&skippable-integrations=1)
+
+## Useful Links
+
+- [Bootstrap Template](https://dashui.codescandy.com/free-bootstrap-5-admin-dashboard-template.html)
+- [React Template](https://dashui.codescandy.com/free-reactjs-admin-dashboard-template.html)
+- [Next.js Template](https://dashui.codescandy.com/free-next-js-admin-dashboard-template.html)
+- [Nuxt.js Template](https://dashui.codescandy.com/free-nuxt-js-admin-dashboard-template.html)
+- [Tailwind Template](https://dashui.codescandy.com/free-tailwindcss-admin-dashboard-html-template.html)
+
+## Figma Design File
+
+Ready to use [Figma File](https://www.figma.com/community/file/1259105309122518026/dash-ui-admin-dashboard-template).
 
 
+| Free Version                                                                                  | DashUI PRO                                                                                |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| ✔️ 1 Dashboard                                                                                | -                                                                           |
+| ✔️ 11 HTML Pages                                                                              | -                                                                     |
+| ✔️ Includine Docs                                                                             | -                                                                          |
+| ✔️ 4 Plugins                                                                                  | -                                                                          |
+| ✔️ Source Files                                                                               | -                                                                          |
+| ❌ Dark Mode                                                                                  | -                                                                             |
+| ❌ Layout Options                                                                             | -                                                                      |
+| ❌ Priority Support                                                                           | -                                                                       |
+| -                                                                                             | -                                                                            |
+| [Free Download](https://dashui.codescandy.com/free-reactjs-admin-dashboard-template.html) | [Coming Soon]() |
 
-## 🚀 Introduction
-
-In an era where every second counts, emergency departments (ED) are under immense pressure due to overcrowding, long waiting times, and scarce resources. **Mostachfa LINK** is here to revolutionize the way hospitals manage emergencies by automating patient flow, resource tracking, and real-time communication. Our goal? Faster response times and more efficient care! ⏱️❤️
-
----
-
-## 🌐 Project Context
-
-Hospitals face daily challenges such as:
-- **⏳ Long Waiting Times:** Inefficient patient flow management.
-- **🏥 Overcrowded ERs:** Poor patient distribution.
-- **📉 Limited Resource Tracking:** Inability to monitor doctors, nurses, and equipment in real time.
-- **🔮 Uncertain Emergency Trends:** Difficulty in predicting and preparing for patient surges.
-
-**Mostachfa LINK** tackles these issues by:
-- **Real-Time Communication:** Seamlessly connecting doctors, nurses, ambulance drivers, and patients.
-- **Automated Triage:** Classifying patients by severity with predefined medical criteria.
-- **Predictive Analytics:** Estimating delays to reduce waiting times.
-- **Resource Optimization:** Efficiently managing hospital beds, equipment, and staffing.
-
----
-
-## 🎯 General and Specific Goals
-
-### Overall Goal
-Develop an intelligent emergency management system that empowers hospitals to manage patients, medical staff, and resources efficiently.
-
-### Specific Goals
-- **📈 Improve Patient Flow:** Track patients from arrival to discharge.
-- **⏱️ Reduce Delays:** Use predictive analytics to estimate and minimize waiting times.
-- **🔧 Optimize Resources:** Dynamically allocate beds, equipment, and staffing.
-- **💬 Real-Time Communication:** Enable seamless interactions among emergency teams.
-- **🚦 Automated Triage:** Classify patients automatically based on urgency.
-- **📊 Informed Decisions:** Provide dashboards with key emergency statistics.
-
----
-
-## 👩‍💻 Team
-
-**Queen Code** – a dynamic team of innovators dedicated to saving lives through technology:
-
-- **Omaima Nasser** 🌟
-- **Nadra Warteni** 🚀
-- **Sana Chihi** 💡
-- **Ameni Braik** 🔥
-
----
-
-## 🛠️ Getting Started
-
-Follow these steps to set up **Mostachfa LINK** on your local machine for development and testing:
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/)  🖥️
-- [Git](https://git-scm.com/) 🔧
-- [Docker](https://www.docker.com/)  🐳
-
-### Installation
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/QueenCode/mostachfa-link.git
-   cd mostachfa-link
