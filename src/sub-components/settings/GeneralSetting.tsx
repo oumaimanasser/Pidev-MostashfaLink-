@@ -35,7 +35,7 @@ const GeneralSetting = () => {
             </div>
             <Row className="align-items-center mb-8">
               <Col md={3} className="mb-3 mb-md-0">
-                <h5 className="mb-0">Avatar</h5>
+              
               </Col>
               <Col md={9}>
                 <div className="d-flex align-items-center">
@@ -145,65 +145,11 @@ const GeneralSetting = () => {
                     </Col>
                   </Row>
 
-                  {/* Location */}
-                  <Row className="mb-3">
-                    <Form.Label className="col-sm-4" htmlFor="country">
-                      Location
-                    </Form.Label>
-                    <Col md={8} xs={12}>
-                      <Form.Control
-                        as={FormSelect}
-                        placeholder="Select Country"
-                        id="country"
-                        options={countryOptions}
-                      />
-                    </Col>
-                  </Row>
-
-                  {/* Address Line One */}
-                  <Row className="mb-3">
-                    <Form.Label className="col-sm-4" htmlFor="addressLine">
-                      Address line 1
-                    </Form.Label>
-                    <Col md={8} xs={12}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Enter Address line 1"
-                        id="addressLine"
-                        required
-                      />
-                    </Col>
-                  </Row>
-
-                  {/* Address Line Two */}
-                  <Row className="mb-3">
-                    <Form.Label className="col-sm-4" htmlFor="addressLineTwo">
-                      Address line 2
-                    </Form.Label>
-                    <Col md={8} xs={12}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Enter Address line 2"
-                        id="addressLineTwo"
-                        required
-                      />
-                    </Col>
-                  </Row>
-
                   {/* Zip code */}
                   <Row className="align-items-center">
                     <Form.Label className="col-sm-4" htmlFor="zipcode">
-                      Zip code
+                    
                     </Form.Label>
-
-                    <Col md={8} xs={12}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Enter Zip code"
-                        id="zipcode"
-                        required
-                      />
-                    </Col>
 
                     <Col md={{ offset: 4, span: 8 }} xs={12} className="mt-4">
                       <Button variant="primary" type="submit">

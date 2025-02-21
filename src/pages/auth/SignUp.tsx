@@ -15,7 +15,7 @@ const SignUp = () => {
             <div className="mb-4">
               <Link to="/">
                 <Image
-                  src="/images/brand/logo/logo-primary.svg"
+                  src="/public/images/brand/logo/Red Circle Health Logo (2).png"
                   className="mb-2"
                   alt=""
                 />
