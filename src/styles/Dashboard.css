@@ -1,0 +1,36 @@
+.container {
+    display: flex;
+  }
+  
+  .dashboard {
+    margin-left: 260px;
+    padding: 20px;
+    width: 100%;
+  }
+  
+  .cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 200px;
+    text-align: center;
+    transition: transform 0.3s;
+  }
+  
+  .card:hover {
+    transform: scale(1.05);
+  }
+  
+  .details {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
