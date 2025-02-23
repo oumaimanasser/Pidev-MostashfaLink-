@@ -1,11 +1,17 @@
 import React from "react";
-import Card from "../components/Card"; // Vérifie le bon chemin
+import Card from "../components/Card"; // Assure-toi du bon chemin
 
 const Dashboard = () => {
   return (
     <div className="dashboard-container">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <h2>Sidebar</h2>
+        {/* Ajoute ici tes liens de navigation */}
+      </aside>
+
       {/* Contenu principal */}
-      <main className="dashboard-content">
+      <main className="dashboard">
         <h1>Emergency Department Dashboard</h1>
         <div className="cards">
           <Card title="User Management" count={245} />
