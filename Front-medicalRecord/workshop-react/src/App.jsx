@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -30,17 +30,37 @@ function App() {
     const [message, setMessage] = useState({ text: '', type: '' });
     const [isEditing, setIsEditing] = useState(false);
     const [showConsultationForm, setShowConsultationForm] = useState(false);
+    const [editingConsultation, setEditingConsultation] = useState(null); // État pour la consultation en cours de modification
 
-    // Chargement initial des dossiers médicaux
+    // Chargement initial des dossiers médicaux avec leurs consultations
     useEffect(() => {
-        fetchAllRecords();
+        fetchAllRecordsWithConsultations();
     }, []);
 
     // Fonctions pour les requêtes API
-    const fetchAllRecords = async () => {
+    const fetchAllRecordsWithConsultations = async () => {
         try {
-            const response = await axios.get(API_URL);
-            setMedicalRecords(response.data);
+            // Récupérer tous les dossiers médicaux
+            const recordsResponse = await axios.get(API_URL);
+            const records = recordsResponse.data;
+
+            // Charger les consultations pour chaque dossier médical
+            const recordsWithConsultations = await Promise.all(
+                records.map(async (record) => {
+                    try {
+                        const consultationsResponse = await axios.get(`${CONSULTATION_API_URL}/${record._id}/consultations`);
+                        return {
+                            ...record,
+                            consultations: consultationsResponse.data
+                        };
+                    } catch (error) {
+                        console.error(`Erreur lors du chargement des consultations pour le dossier ${record._id}:`, error);
+                        return { ...record, consultations: [] };
+                    }
+                })
+            );
+
+            setMedicalRecords(recordsWithConsultations);
             setMessage({ text: 'Dossiers médicaux chargés avec succès', type: 'success' });
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
@@ -52,8 +72,17 @@ function App() {
 
         try {
             const response = await axios.get(`${API_URL}/${searchId}`);
-            setCurrentRecord(response.data);
-            setMedicalRecords([response.data]);
+            const record = response.data;
+
+            // Fetch consultations for this record
+            const consultationsResponse = await axios.get(`${CONSULTATION_API_URL}/${record._id}/consultations`);
+            const recordWithConsultations = {
+                ...record,
+                consultations: consultationsResponse.data
+            };
+
+            setCurrentRecord(recordWithConsultations);
+            setMedicalRecords([recordWithConsultations]);
             setMessage({ text: 'Dossier médical trouvé', type: 'success' });
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
@@ -66,7 +95,25 @@ function App() {
 
         try {
             const response = await axios.get(`${API_URL}/patient/${searchPatientId}`);
-            setMedicalRecords(response.data);
+            const records = response.data;
+
+            // Fetch consultations for each record
+            const recordsWithConsultations = await Promise.all(
+                records.map(async (record) => {
+                    try {
+                        const consultationsResponse = await axios.get(`${CONSULTATION_API_URL}/${record._id}/consultations`);
+                        return {
+                            ...record,
+                            consultations: consultationsResponse.data
+                        };
+                    } catch (error) {
+                        console.error(`Erreur lors du chargement des consultations pour le dossier ${record._id}:`, error);
+                        return { ...record, consultations: [] };
+                    }
+                })
+            );
+
+            setMedicalRecords(recordsWithConsultations);
             setMessage({ text: 'Dossiers médicaux du patient trouvés', type: 'success' });
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
@@ -117,14 +164,78 @@ function App() {
     const createConsultation = async () => {
         try {
             const response = await axios.post(CONSULTATION_API_URL, consultationFormData);
-            setMedicalRecords(
-                medicalRecords.map(record =>
-                    record._id === consultationFormData.medicalRecordId
-                        ? { ...record, consultations: [...record.consultations, response.data] }
-                        : record
-                )
-            );
+
+            const updatedRecords = medicalRecords.map(record => {
+                if (record._id === consultationFormData.medicalRecordId) {
+                    const updatedConsultations = record.consultations
+                        ? [...record.consultations, response.data]
+                        : [response.data];
+
+                    return {
+                        ...record,
+                        consultations: updatedConsultations
+                    };
+                }
+                return record;
+            });
+
+            setMedicalRecords(updatedRecords);
             setMessage({ text: 'Consultation ajoutée avec succès', type: 'success' });
+            resetConsultationForm();
+        } catch (error) {
+            setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
+        }
+    };
+
+    // Fonction pour supprimer une consultation
+    const deleteConsultation = async (consultationId, medicalRecordId) => {
+        try {
+            await axios.delete(`${CONSULTATION_API_URL}/${consultationId}`);
+
+            setMedicalRecords(prevRecords =>
+                prevRecords.map(record => {
+                    if (record._id === medicalRecordId) {
+                        return {
+                            ...record,
+                            consultations: record.consultations.filter(
+                                consultation => consultation._id !== consultationId
+                            )
+                        };
+                    }
+                    return record;
+                })
+            );
+
+            setMessage({ text: 'Consultation supprimée avec succès', type: 'success' });
+        } catch (error) {
+            setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
+        }
+    };
+
+    // Fonction pour modifier une consultation
+    const updateConsultation = async () => {
+        try {
+            const response = await axios.put(
+                `${CONSULTATION_API_URL}/${editingConsultation._id}`,
+                consultationFormData
+            );
+
+            // Mettre à jour l'état local
+            setMedicalRecords(prevRecords =>
+                prevRecords.map(record => {
+                    if (record._id === consultationFormData.medicalRecordId) {
+                        return {
+                            ...record,
+                            consultations: record.consultations.map(consultation =>
+                                consultation._id === editingConsultation._id ? response.data : consultation
+                            )
+                        };
+                    }
+                    return record;
+                })
+            );
+
+            setMessage({ text: 'Consultation mise à jour avec succès', type: 'success' });
             resetConsultationForm();
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
@@ -153,7 +264,11 @@ function App() {
 
     const handleConsultationSubmit = (e) => {
         e.preventDefault();
-        createConsultation();
+        if (editingConsultation) {
+            updateConsultation();
+        } else {
+            createConsultation();
+        }
     };
 
     const handleEdit = (record) => {
@@ -166,6 +281,19 @@ function App() {
         });
         setIsEditing(true);
         setCurrentRecord(record);
+    };
+
+    const handleEditConsultation = (consultation) => {
+        setEditingConsultation(consultation);
+        setConsultationFormData({
+            idConsultation: consultation.idConsultation,
+            consultationDate: consultation.consultationDate.split('T')[0], // Format de date pour l'input
+            doctor: consultation.doctor,
+            prescription: consultation.prescription,
+            treatment: consultation.treatment,
+            medicalRecordId: consultation.medicalRecord
+        });
+        setShowConsultationForm(true);
     };
 
     const resetForm = () => {
@@ -189,6 +317,7 @@ function App() {
             treatment: '',
             medicalRecordId: ''
         });
+        setEditingConsultation(null);
         setShowConsultationForm(false);
     };
 
@@ -232,7 +361,7 @@ function App() {
                             <button onClick={fetchRecordsByPatientId}>Rechercher</button>
                         </div>
 
-                        <button className="reset-btn" onClick={fetchAllRecords}>Afficher tous les dossiers</button>
+                        <button className="reset-btn" onClick={fetchAllRecordsWithConsultations}>Afficher tous les dossiers</button>
                     </div>
                 </section>
 
@@ -352,6 +481,21 @@ function App() {
                                                             <p><strong>Médecin:</strong> {consultation.doctor}</p>
                                                             <p><strong>Prescription:</strong> {consultation.prescription}</p>
                                                             <p><strong>Traitement:</strong> {consultation.treatment}</p>
+                                                            {/* Boutons d'actions */}
+                                                            <div className="consultation-actions">
+                                                                <button
+                                                                    className="edit-btn"
+                                                                    onClick={() => handleEditConsultation(consultation)}
+                                                                >
+                                                                    Modifier
+                                                                </button>
+                                                                <button
+                                                                    className="delete-btn"
+                                                                    onClick={() => deleteConsultation(consultation._id, record._id)}
+                                                                >
+                                                                    Supprimer
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))
                                                 ) : (
@@ -377,7 +521,7 @@ function App() {
                             >
                                 ×
                             </button>
-                            <h2>Ajouter une consultation</h2>
+                            <h2>{editingConsultation ? 'Modifier une consultation' : 'Ajouter une consultation'}</h2>
                             <form onSubmit={handleConsultationSubmit}>
                                 <div className="form-group">
                                     <label>ID de la consultation:</label>
@@ -433,8 +577,12 @@ function App() {
                                 </div>
 
                                 <div className="form-buttons">
-                                    <button type="submit" className="submit-btn">Ajouter</button>
-                                    <button type="button" className="cancel-btn" onClick={resetConsultationForm}>Annuler</button>
+                                    <button type="submit" className="submit-btn">
+                                        {editingConsultation ? 'Mettre à jour' : 'Ajouter'}
+                                    </button>
+                                    <button type="button" className="cancel-btn" onClick={resetConsultationForm}>
+                                        Annuler
+                                    </button>
                                 </div>
                             </form>
                         </div>

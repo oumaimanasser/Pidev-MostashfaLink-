@@ -45,3 +45,35 @@ img {
   max-width: 100%;
   height: auto;
 }
+.edit-btn {
+  background-color: #2196F3; /* Bleu */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.edit-btn:hover {
+  background-color: #1e88e5; /* Bleu plus foncé au survol */
+}
+
+.delete-btn {
+  background-color: #f44336; /* Rouge */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background-color: #e53935; /* Rouge plus foncé au survol */
+}
+
+.consultation-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
