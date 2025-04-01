@@ -5,13 +5,17 @@ const {
     getAllEquipment,
     getEquipmentById,
     updateEquipment,
-    deleteEquipment
+    deleteEquipment,
+    generateEquipmentList
 } = require("../controllers/equipmentController");
 
-// Routes CRUD pour les équipements
+// Route pour le PDF (doit être avant les routes avec paramètres)
+router.get("/pdf", generateEquipmentList);
+
+// Routes CRUD
 router.post("/", createEquipment);
 router.get("/", getAllEquipment);
-router.get("/:id", getEquipmentById);  // Cette route prend un ID d'équipement
+router.get("/:id", getEquipmentById);
 router.put("/:id", updateEquipment);
 router.delete("/:id", deleteEquipment);
 

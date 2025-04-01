@@ -1,53 +1,75 @@
+require('dotenv').config();
 const express = require('express');
-const PDFDocument = require('pdfkit');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+const equipmentRoutes = require('./routes/equipmentRoutes');
 
-// Création de l'application Express
+// Initialisation de l'application Express
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-// Middleware de base
+// Middleware essentiels
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Route de test OBLIGATOIRE
-app.get('/api/test-server', (req, res) => {
-    console.log("✅ Serveur fonctionnel");
-    res.send("Test réussi - Serveur opérationnel");
-});
+// Configuration CORS détaillée
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 
-// Route PDF - Version garantie
-app.get('/api/generate-pdf', (req, res) => {
-    console.log("📄 Début génération PDF");
+// Connexion à MongoDB avec gestion d'erreur améliorée
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/equipmentDB', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000
+})
+    .then(() => console.log('✅ Connecté à MongoDB'))
+    .catch(err => {
+      console.error('❌ Erreur de connexion MongoDB:', err);
+      process.exit(1);
+    });
 
-    try {
-        const doc = new PDFDocument();
+// Routes API
+console.log('🛠️ Initialisation des routes /api/equipments');
+app.use('/api/equipments', equipmentRoutes);
 
-        // Configuration CRITIQUE des headers
-        res.writeHead(200, {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': 'attachment; filename=document.pdf'
-        });
+// Servir les fichiers statiques en production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-        // Génération du contenu PDF
-        doc.pipe(res);
-        doc.font('Helvetica-Bold')
-            .fontSize(25)
-            .text('PDF FONCTIONNEL', { align: 'center' })
-            .moveDown(2)
-            .fontSize(12)
-            .text(`Généré le: ${new Date().toLocaleString()}`);
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'));
+  });
+}
 
-        doc.end();
-
-    } catch (error) {
-        console.error("💥 Erreur:", error);
-        res.status(500).send("Erreur de génération");
-    }
+// Middleware de gestion d'erreurs centralisé
+app.use((err, req, res, next) => {
+  console.error('🔥 Erreur:', err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Erreur serveur',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // Démarrer le serveur
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Serveur actif sur http://localhost:${PORT}`);
-    console.log('Testez avec:');
-    console.log(`1. curl http://localhost:${PORT}/api/test-server`);
-    console.log(`2. curl http://localhost:${PORT}/api/generate-pdf --output test.pdf`);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Serveur en écoute sur http://localhost:${PORT}`);
+  console.log(`🔗 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  console.log(`⚡ Environnement: ${process.env.NODE_ENV || 'development'}`);
+});
+
+// Gestion propre des arrêts
+process.on('SIGTERM', () => {
+  console.log('🛑 Arrêt propre du serveur');
+  server.close(() => {
+    mongoose.connection.close(false, () => {
+      console.log('📦 Connexions fermées');
+      process.exit(0);
+    });
+  });
 });
