@@ -11,11 +11,37 @@ exports.createPersonnel = async (req, res) => {
     }
 };
 
-// 📥 Récupérer tous les personnels
+// 📥 Récupérer tous les personnels avec recherche, filtre par rôle et pagination
 exports.getAllPersonnel = async (req, res) => {
     try {
-        const personnels = await Personnel.find();
-        res.status(200).json(personnels);
+        const { search = '', role = '', page = 1, limit = 5 } = req.query;
+
+        let query = {
+            $or: [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { role: { $regex: search, $options: 'i' } }
+            ]
+        };
+
+        if (role) {
+            query = {
+                $and: [query, { role: { $regex: role, $options: 'i' } }]
+            };
+        }
+
+        const personnels = await Personnel.find(query)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+
+        const total = await Personnel.countDocuments(query);
+
+        res.status(200).json({
+            data: personnels,
+            total,
+            page: Number(page),
+            totalPages: Math.ceil(total / limit)
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -60,10 +86,10 @@ exports.deletePersonnel = async (req, res) => {
     }
 };
 
-// 📥 Récupérer les shifts (début et fin de service)
+// 📅 Récupérer uniquement les shifts
 exports.getAllShifts = async (req, res) => {
     try {
-        const shifts = await Personnel.find({}, 'firstName lastName shiftStart shiftEnd'); // Sélectionner uniquement les champs nécessaires
+        const shifts = await Personnel.find({}, 'firstName lastName shiftStart shiftEnd');
         res.status(200).json(shifts);
     } catch (error) {
         res.status(500).json({ message: error.message });

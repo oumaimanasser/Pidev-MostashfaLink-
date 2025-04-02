@@ -10,7 +10,7 @@ const localizer = momentLocalizer(moment);
 const GoogleCalendar = () => {
     const [events, setEvents] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [currentView, setCurrentView] = useState(Views.MONTH); // 👈 nouvelle vue active
+    const [currentView, setCurrentView] = useState(Views.MONTH);
 
     useEffect(() => {
         const initClient = () => {
@@ -23,7 +23,7 @@ const GoogleCalendar = () => {
                 console.log('✅ Google API Initialized');
                 fetchEvents();
             }).catch((error) => {
-                console.error('❌ Erreur lors de l\'initialisation de l\'API Google', error);
+                console.error('❌ Erreur init API Google', error);
             });
         };
 
@@ -34,13 +34,11 @@ const GoogleCalendar = () => {
         try {
             const googleEvents = await fetchGoogleCalendarEvents();
             const backendEvents = await fetchBackendShifts();
-
             const allEvents = [...googleEvents, ...backendEvents];
             setEvents(allEvents);
             console.log('✅ Événements combinés :', allEvents);
         } catch (error) {
-            console.error('❌ Erreur lors de la récupération des événements :', error);
-            alert(`Erreur lors de la récupération des événements : ${error.message}`);
+            console.error('❌ Erreur récupération événements :', error);
         }
     };
 
@@ -55,44 +53,41 @@ const GoogleCalendar = () => {
             });
 
             const data = await res.json();
-
             if (data.error) {
-                console.error('❌ Erreur lors de la récupération des événements Google :', data.error);
                 alert(`Erreur Google : ${data.error.message}`);
                 return [];
             }
 
-            const formattedEvents = data.items.map(event => ({
+            return data.items.map(event => ({
                 id: event.id,
                 title: event.summary,
                 start: new Date(event.start.dateTime || event.start.date),
                 end: new Date(event.end.dateTime || event.end.date)
             }));
-
-            console.log('✅ Événements Google récupérés :', formattedEvents);
-            return formattedEvents;
         } catch (error) {
-            console.error('❌ Erreur lors de la requête Google :', error);
+            console.error('❌ Erreur Google fetch:', error);
             return [];
         }
     };
 
     const fetchBackendShifts = async () => {
         try {
-            const res = await fetch('http://localhost:5001/api/personnel');
+            const res = await fetch('http://localhost:5001/api/personnel/shifts');
             const data = await res.json();
 
-            const formattedShifts = data.map(item => ({
-                id: item._id,
-                title: `${item.firstName} ${item.lastName} - ${item.role}`,
-                start: new Date(item.shiftStart),
-                end: new Date(item.shiftEnd)
-            }));
+            const formattedShifts = data
+                .filter(p => p.shiftStart && p.shiftEnd)
+                .map(p => ({
+                    id: p._id,
+                    title: `${p.firstName} ${p.lastName} - ${p.role || 'Service'}`,
+                    start: new Date(p.shiftStart),
+                    end: new Date(p.shiftEnd),
+                    role: p.role || ''
+                }));
 
-            console.log('✅ Événements backend récupérés :', formattedShifts);
             return formattedShifts;
         } catch (error) {
-            console.error('❌ Erreur lors de la requête backend :', error);
+            console.error('❌ Erreur backend:', error);
             return [];
         }
     };
@@ -104,48 +99,61 @@ const GoogleCalendar = () => {
                 fetchEvents();
             })
             .catch((error) => {
-                console.error("❌ Erreur lors de la connexion :", error);
-                alert(`Erreur lors de la connexion : ${error.error}`);
+                console.error("❌ Connexion Google échouée :", error);
             });
     };
 
     const checkAuth = () => {
         const auth = gapi.auth2.getAuthInstance();
         if (auth.isSignedIn.get()) {
-            console.log("✅ Utilisateur connecté :", auth.currentUser.get().getBasicProfile().getEmail());
-            alert(`Connecté en tant que : ${auth.currentUser.get().getBasicProfile().getEmail()}`);
+            const email = auth.currentUser.get().getBasicProfile().getEmail();
+            alert(`Connecté en tant que : ${email}`);
         } else {
-            console.log("❌ Utilisateur non connecté");
             alert("Utilisateur non connecté");
         }
     };
 
     const signOut = () => {
         gapi.auth2.getAuthInstance().signOut().then(() => {
-            console.log('✅ Déconnecté de Google');
+            console.log('✅ Déconnecté');
             setEvents([]);
-        }).catch((error) => {
-            console.error('❌ Erreur lors de la déconnexion', error);
         });
     };
 
     const handleNavigate = (newDate) => {
-        console.log(`Navigating to ${newDate}`);
         setCurrentDate(newDate);
     };
 
     const handleViewChange = (newView) => {
-        console.log(`Vue changée : ${newView}`);
         setCurrentView(newView);
     };
 
+    // 🎨 Style selon le rôle
+    const eventPropGetter = (event) => {
+        let backgroundColor = '#2ECC71'; // par défaut : vert
+        if (event.role) {
+            if (event.role.toLowerCase().includes('médecin')) backgroundColor = '#3498DB';
+            else if (event.role.toLowerCase().includes('infirmier')) backgroundColor = '#1ABC9C';
+            else backgroundColor = '#F39C12'; // autre
+        }
+
+        return {
+            style: {
+                backgroundColor,
+                color: 'white',
+                borderRadius: '4px',
+                padding: '4px'
+            }
+        };
+    };
+
     return (
-        <div style={{ height: 500 }}>
-            <h2>Calendrier Google</h2>
-            <div>
-                <button onClick={signIn}>Connecter à Google</button>
-                <button onClick={signOut}>Déconnecter</button>
-                <button onClick={checkAuth}>Vérifier la connexion</button>
+        <div style={{ padding: '20px' }}>
+            <h2>Calendrier Google + Backend</h2>
+            <div style={{ marginBottom: '10px' }}>
+                <button onClick={signIn}>🔐 Connecter à Google</button>
+                <button onClick={signOut}>🚪 Déconnecter</button>
+                <button onClick={checkAuth}>✅ Vérifier la connexion</button>
             </div>
             <Calendar
                 localizer={localizer}
@@ -154,22 +162,10 @@ const GoogleCalendar = () => {
                 view={currentView}
                 onView={handleViewChange}
                 onNavigate={handleNavigate}
-                views={{
-                    month: true,
-                    week: true,
-                    day: true,
-                    agenda: true
-                }}
+                views={{ month: true, week: true, day: true, agenda: true }}
                 defaultView={Views.MONTH}
-                style={{ height: 500, margin: '20px' }}
-                eventPropGetter={(event) => ({
-                    style: {
-                        backgroundColor: event.title.includes('Médecin') ? '#3498DB' : '#2ECC71',
-                        color: 'white',
-                        borderRadius: '4px',
-                        padding: '5px'
-                    }
-                })}
+                style={{ height: 600 }}
+                eventPropGetter={eventPropGetter}
             />
         </div>
     );

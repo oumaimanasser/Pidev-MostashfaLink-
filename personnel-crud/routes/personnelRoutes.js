@@ -6,14 +6,14 @@ const {
     getPersonnelById,
     updatePersonnel,
     deletePersonnel,
-    getAllShifts // ✅ Ajout de la nouvelle fonction ici
+    getAllShifts
 } = require('../controllers/personnelController');
 
+router.get('/shifts', getAllShifts);
 router.post('/', createPersonnel);
 router.get('/', getAllPersonnel);
 router.get('/:id', getPersonnelById);
 router.put('/:id', updatePersonnel);
 router.delete('/:id', deletePersonnel);
-router.get('/shifts', getAllShifts); // ✅ Nouvelle route
 
-module.exports = router;
+module.exports = router; // ✅ à ne pas oublier

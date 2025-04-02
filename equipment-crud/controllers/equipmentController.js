@@ -1,7 +1,7 @@
 const PDFDocument = require('pdfkit');
 const Equipment = require('../models/Equipment');
 
-// Fonction de génération PDF
+// 📄 Génération de la liste PDF
 const generateEquipmentList = async (req, res) => {
     try {
         const equipments = await Equipment.find().lean();
@@ -10,13 +10,11 @@ const generateEquipmentList = async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename=equipements.pdf');
 
-        // En-tête
         doc.font('Helvetica-Bold')
             .fontSize(20)
             .text('LISTE DES ÉQUIPEMENTS', { align: 'center' })
             .moveDown();
 
-        // Tableau
         let y = 150;
         equipments.forEach(equip => {
             doc.font('Helvetica')
@@ -36,7 +34,7 @@ const generateEquipmentList = async (req, res) => {
     }
 };
 
-// Fonctions CRUD de base
+// ➕ Ajouter un équipement
 const createEquipment = async (req, res) => {
     try {
         const newEquipment = await Equipment.create(req.body);
@@ -46,15 +44,36 @@ const createEquipment = async (req, res) => {
     }
 };
 
+// 📥 Récupérer tous les équipements avec recherche + pagination
 const getAllEquipment = async (req, res) => {
     try {
-        const equipments = await Equipment.find();
-        res.json(equipments);
+        const { search = '', page = 1, limit = 5 } = req.query;
+
+        const query = {
+            $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { type: { $regex: search, $options: 'i' } }
+            ]
+        };
+
+        const equipments = await Equipment.find(query)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+
+        const total = await Equipment.countDocuments(query);
+
+        res.json({
+            data: equipments,
+            total,
+            page: Number(page),
+            totalPages: Math.ceil(total / limit)
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
+// 📥 Récupérer un équipement par ID
 const getEquipmentById = async (req, res) => {
     try {
         const equipment = await Equipment.findById(req.params.id);
@@ -65,6 +84,7 @@ const getEquipmentById = async (req, res) => {
     }
 };
 
+// 🔄 Modifier un équipement
 const updateEquipment = async (req, res) => {
     try {
         const updatedEquipment = await Equipment.findByIdAndUpdate(
@@ -79,6 +99,7 @@ const updateEquipment = async (req, res) => {
     }
 };
 
+// ❌ Supprimer un équipement
 const deleteEquipment = async (req, res) => {
     try {
         const deletedEquipment = await Equipment.findByIdAndDelete(req.params.id);
@@ -89,7 +110,6 @@ const deleteEquipment = async (req, res) => {
     }
 };
 
-// Export de toutes les fonctions
 module.exports = {
     createEquipment,
     getAllEquipment,
