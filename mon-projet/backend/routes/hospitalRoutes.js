@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const Hospital = require("../models/Hospital");
 const Hospitalinfo = require("../models/Hospitalinfo");
 
-const router = express.Router();
+
 
 // Middleware pour valider les ObjectId
 const validateObjectId = (req, res, next) => {
@@ -13,6 +13,68 @@ const validateObjectId = (req, res, next) => {
   }
   next();
 };
+const router = express.Router();
+const Doctor = require('../models/Doctor');
+
+// Get doctors for a hospital
+router.get('/:hospitalId/doctors', async (req, res) => {
+  try {
+    const doctors = await Doctor.find({ hospitalId: req.params.hospitalId });
+    res.json(doctors);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+router.get('/doctors/all', async (req, res) => {
+  try {
+    const doctors = await Doctor.find();
+    res.json(doctors);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+// Add a new doctor
+router.post('/:hospitalId/doctors', async (req, res) => {
+  const doctor = new Doctor({
+    name: req.body.name,
+    specialty: req.body.specialty,
+    available: req.body.available,
+    hospitalId: req.params.hospitalId
+  });
+
+  try {
+    const newDoctor = await doctor.save();
+    res.status(201).json(newDoctor);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Update a doctor
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedDoctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedDoctor);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Delete a doctor
+router.delete('/:id', async (req, res) => {
+  try {
+    await Doctor.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Doctor deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 // ➤ GET All Hospitals
 router.get("/", async (req, res) => {
@@ -52,27 +114,37 @@ router.post("/", async (req, res) => {
 });
 
 // ➤ POST Add Hospital Info
-router.post("/hospitals/:id/info", validateObjectId, async (req, res) => {
+// ➤ POST Add Hospital Info
+// POST Add Hospital Info (Version corrigée)
+router.post("/:id/info", validateObjectId, async (req, res) => {
   try {
-    const { services, nbrLit, departments } = req.body;
+    console.log("Requête reçue:", req.body); // Vérifier les données envoyées
+    
+    const { services, departments, nbrLitTotal, nbrLitDispo } = req.body;
 
-    // Vérifier si l'hôpital existe
-    const hospitalExists = await Hospital.findById(req.params.id);
-    if (!hospitalExists) {
+    if (typeof nbrLitTotal !== "number" || typeof nbrLitDispo !== "number") {
+      return res.status(400).json({ message: "Les nombres de lits doivent être des nombres valides" });
+    }
+
+    const hospital = await Hospital.findById(req.params.id);
+    if (!hospital) {
       return res.status(404).json({ message: "Hôpital non trouvé" });
     }
 
-    // Créer un nouveau Hospitalinfo
     const newInfo = new Hospitalinfo({
       idHospital: req.params.id,
       services,
-      nbrLit,
       departments,
+      nbrLitTotal,
+      nbrLitDispo
     });
+
+    console.log("Données à enregistrer:", newInfo); // Vérifier les valeurs avant insertion
 
     const savedInfo = await newInfo.save();
     res.status(201).json(savedInfo);
   } catch (error) {
+    console.error("Erreur lors de l'enregistrement:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -116,14 +188,55 @@ router.put("/:id", validateObjectId, async (req, res) => {
 // ➤ PUT Update Hospital Info
 router.put("/info/:id", validateObjectId, async (req, res) => {
   try {
-    const updatedInfo = await Hospitalinfo.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updatedInfo) return res.status(404).json({ message: "Information non trouvée" });
+    const { nbrLitTotal, nbrLitDispo } = req.body;
+
+   
+
+    const updatedInfo = await Hospitalinfo.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body},
+      { new: true }
+    );
+
+    if (!updatedInfo) {
+      return res.status(404).json({ message: "Information non trouvée" });
+    }
 
     res.json(updatedInfo);
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error });
   }
 });
+// ➤ GET Statistiques des Hôpitaux
+// Dans votre fichier de routes (hospitalRoutes.js)
+router.get("/stats", async (req, res) => {
+  try {
+    const stats = await Hospitalinfo.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalLits: { $sum: "$nbrLitTotal" },
+          totalDispo: { $sum: "$nbrLitDispo" },
+         
+        }
+      }
+    ]);
+    
+    if (!stats.length) {
+      return res.status(404).json({ message: "Aucune donnée disponible" });
+    }
+
+    res.json({
+      totalLits: stats[0].totalLits,
+      totalDispo: stats[0].totalDispo,
+      
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
 // ➤ DELETE a Hospital (Cascade delete HospitalInfo)
 router.delete("/:id", validateObjectId, async (req, res) => {
   try {
@@ -155,9 +268,9 @@ router.delete("/info/:id", validateObjectId, async (req, res) => {
 // ➤ POST Ajouter des informations pour un hôpital
 router.post("/hospitalinfo", async (req, res) => {
   try {
-    const { idHospital, services, nbrLit, departments } = req.body;
+    const { idHospital, services, nbrLitTotal, departments , nbrLitDispo} = req.body;
 
-    if (!idHospital || !services || !nbrLit || !departments) {
+    if (!idHospital || !services || !nbrLitTotal || !departments|| !nbrLitDispo) {
       return res.status(400).json({ message: "Tous les champs sont requis" });
     }
 
@@ -166,7 +279,7 @@ router.post("/hospitalinfo", async (req, res) => {
       return res.status(404).json({ message: "Hôpital non trouvé" });
     }
 
-    const newInfo = new Hospitalinfo({ idHospital, services, nbrLit, departments });
+    const newInfo = new Hospitalinfo({ idHospital, services, nbrLitTotal, departments,nbrLitDispo });
     const savedInfo = await newInfo.save();
     
     res.status(201).json(savedInfo);
@@ -176,7 +289,7 @@ router.post("/hospitalinfo", async (req, res) => {
 });
 router.post("/:id/info", validateObjectId, async (req, res) => {
   try {
-    const { services, nbrLit, departments } = req.body;
+    const { services, nbrLitTotal, departments,nbrLitDispo } = req.body;
 
     // Vérifier si l'hôpital existe
     const hospital = await Hospital.findById(req.params.id);
@@ -188,8 +301,10 @@ router.post("/:id/info", validateObjectId, async (req, res) => {
     const newInfo = new Hospitalinfo({
       idHospital: req.params.id,
       services,
-      nbrLit,
+      nbrLitTotal,
+      
       departments,
+      nbrLitDispo
     });
 
     const savedInfo = await newInfo.save();
