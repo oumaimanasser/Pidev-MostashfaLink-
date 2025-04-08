@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.1",
     "bootstrap": "^5.3.3",
+    "buffer": "^6.0.3",
     "chart.js": "^4.4.8",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.10.0",
@@ -22,7 +23,10 @@
     "react-qr-code": "^2.0.15",
     "react-router-dom": "^7.2.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.5",
+    "web-vitals": "^2.1.4",
+    "xml-js": "^1.6.11"
   },
   "scripts": {
     "start": "react-scripts start",

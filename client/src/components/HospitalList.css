@@ -550,3 +550,91 @@
   visibility: visible;
   opacity: 1;
 }
+/* Dans HospitalList.css */
+.alerts-panel {
+  background: #fff;
+  border: 1px solid #ff6b6b;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.alert-orange {
+  border-left: 4px solid #ffa502;
+  padding-left: 10px;
+}
+
+.alert-red {
+  border-left: 4px solid #ff4757;
+  padding-left: 10px;
+  background-color: #fff5f5;
+}
+
+.emergency-btn {
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+.alert-badge {
+  background: #ff4757;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.8em;
+  margin-left: 5px;
+}
+/* Styles pour les alertes incendies */
+.alerts-panel {
+  background-color: #fff8f8;
+  border-left: 5px solid #ff6b6b;
+  padding: 15px;
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+.fire-icon {
+  color: #ff6b6b;
+  margin-right: 10px;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.alert-level {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+.alert-level.red {
+  background-color: #ff6b6b;
+  color: white;
+}
+
+.alert-level.orange {
+  background-color: #ffa502;
+  color: white;
+}
+
+.emergency-btn {
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.emergency-btn:hover {
+  background-color: #ff5252;
+}

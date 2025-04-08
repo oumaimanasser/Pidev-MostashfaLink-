@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useCallback } from "react";
+import { 
+
+  FaFire
+} from "react-icons/fa";
 import axios from "axios";
 import NotificationPanel from "./NotificationPanel";
 import "./HospitalList.css";
 import MapComponent from "./MapComponent";
-import { FaCommentMedical, FaBell, FaPlus, FaSearch } from "react-icons/fa";
+import { FaCommentMedical, FaBell, FaPlus, FaSearch, FaExclamationTriangle } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { FaQrcode } from "react-icons/fa";
+import { xml2js } from "xml-js"; // Changé de xml2json à xml2js
+
 const HospitalList = () => {
   // États principaux
   const [hospitals, setHospitals] = useState([]);
@@ -29,7 +35,10 @@ const HospitalList = () => {
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [hospitalLocations, setHospitalLocations] = useState({});
   const [showQRCode, setShowQRCode] = useState(false);
-const [qrCodeData, setQrCodeData] = useState("");
+  const [qrCodeData, setQrCodeData] = useState("");
+  const [disasterAlerts, setDisasterAlerts] = useState([]);
+  const [highRiskAlerts, setHighRiskAlerts] = useState([]);
+
   // États pour le chatbot IA
   const [messages, setMessages] = useState([
     {
@@ -69,9 +78,91 @@ const [qrCodeData, setQrCodeData] = useState("");
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  
+  const fetchGDACSAlerts = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        "https://www.gdacs.org/xml/rss.xml",
+        {
+          params: {
+            from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            alertlevel: "orange,red"
+          },
+          headers: {
+            'Accept': 'application/xml'
+          }
+        }
+      );
+  
+      const result = xml2js(response.data, { compact: true });
+      const items = result.rss.channel.item;
+      const alertsArray = Array.isArray(items) ? items : [items];
+  
+      const formattedAlerts = alertsArray.map(item => ({
+        eventid: item.guid._text,
+        eventname: item.title._text,
+        eventtype: item.category._text.toLowerCase(),
+        alertlevel: item['gdacs:alertlevel']._text,
+        country: item['gdacs:country']._text,
+        fromdate: item.pubDate._text,
+        episodecountry: item['gdacs:episodecountry']._text || ''
+      })).filter(alert => 
+        // Filtre pour la Tunisie seulement
+        alert.country.toLowerCase().includes('tunisia') || 
+        alert.episodecountry.toLowerCase().includes('tunisia')
+      );
+  
+      setDisasterAlerts(formattedAlerts);
+      setHighRiskAlerts(formattedAlerts.filter(alert => alert.alertlevel === 'red'));
+      
+      return formattedAlerts;
+    } catch (err) {
+      console.error("Erreur GDACS API:", err);
+      return [];
+    }
+  }, []);
+
+  // Fonction pour activer le protocole d'urgence
+  const activateEmergencyProtocol = (alert) => {
+    const nearbyHospitals = hospitals.filter(hospital => {
+      const distance = calculateDistanceFromAlert(hospital, alert);
+      return distance < 100; // Rayon de 100km
+    });
+
+    setHospitals(prev => prev.map(h => 
+      nearbyHospitals.some(nh => nh._id === h._id) 
+        ? { 
+            ...h, 
+            emergencyCapacity: h.capacity + 50,
+            emergencyProtocol: true
+          } 
+        : h
+    ));
+
+    addNotification(
+      `Protocole d'urgence activé pour ${alert.eventname}. ${nearbyHospitals.length} hôpitaux en alerte.`,
+      "emergency"
+    );
+  };
+
+  // Fonction pour calculer la distance entre un hôpital et une alerte
+  const calculateDistanceFromAlert = (hospital, alert) => {
+    // Implémentation simplifiée - utiliser les coordonnées réelles dans une vraie application
+    return Math.random() * 150; // Distance aléatoire pour l'exemple
+  };
+
   // Fonction pour générer des réponses intelligentes
   const generateAIResponse = (question) => {
     const lowerQuestion = question.toLowerCase();
+    
+    if (lowerQuestion.includes("catastrophe") || lowerQuestion.includes("alerte")) {
+      if (disasterAlerts.length === 0) {
+        return "Aucune alerte catastrophe active actuellement.";
+      }
+      return `Alertes en cours : ${disasterAlerts.map(a => 
+        `${a.eventname} (${a.alertlevel})`
+      ).join(', ')}. Voir le panneau d'alertes pour détails.`;
+    }
     
     // Détection de salutations
     if (lowerQuestion.includes("bonjour") || lowerQuestion.includes("salut") || lowerQuestion.includes("hello")) {
@@ -85,9 +176,10 @@ const [qrCodeData, setQrCodeData] = useState("");
       );
       
       if (hospitalsInQuestion.length >= 2) {
-        // Simulation de calcul de distance (à remplacer par un vrai service)
-        const distance = Math.round(Math.random() * 20) + 5;
-        return `La distance approximative entre ${hospitalsInQuestion[0].name} et ${hospitalsInQuestion[1].name} est d'environ ${distance} km.`;
+        const distance = calculateDistance(hospitalsInQuestion[0]._id, hospitalsInQuestion[1]._id);
+        return distance 
+          ? `La distance entre ${hospitalsInQuestion[0].name} et ${hospitalsInQuestion[1].name} est d'environ ${distance} km.`
+          : "Distance non disponible";
       }
       
       return "Je peux vous informer sur les distances entre hôpitaux. Mentionnez deux hôpitaux dans votre question.";
@@ -120,11 +212,10 @@ const [qrCodeData, setQrCodeData] = useState("");
     - Lister les médecins par hôpital
     - Indiquer les distances entre hôpitaux
     - Fournir les services disponibles
+    - Afficher les alertes catastrophes
     
     Comment puis-je vous aider précisément ?`;
   };
-    
-    
 
   // Fonction pour envoyer un message
   const sendMessage = async () => {
@@ -168,35 +259,7 @@ const [qrCodeData, setQrCodeData] = useState("");
     }
   };
 
-  // Chargement initial des hôpitaux
-  useEffect(() => {
-    const fetchHospitals = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/hospitals");
-        const hospitalsData = res.data.map(h => ({ ...h, hasBeenNotified: false }));
-        setHospitals(hospitalsData);
-        
-        hospitalsData.forEach(hospital => {
-          if (hospital.capacity === 0) {
-            addNotification(`L'hôpital "${hospital.name}" est complet`, "warning");
-            setHospitals(prev => prev.map(h => 
-              h._id === hospital._id ? { ...h, hasBeenNotified: true } : h
-            ));
-          }
-        });
-      } catch (err) {
-        setError("Erreur lors du chargement des hôpitaux.");
-        addNotification("Erreur lors du chargement des hôpitaux", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHospitals();
-    // Ajoutez cet état
-
-
-// Modifiez le useEffect de chargement initial
-
+  // Chargement initial des hôpitaux et géocodage
   const fetchHospitalsAndLocations = async () => {
     try {
       const res = await axios.get("http://localhost:5000/hospitals");
@@ -214,38 +277,41 @@ const [qrCodeData, setQrCodeData] = useState("");
       setHospitalLocations(locations);
       setHospitals(hospitalsData);
       
+      hospitalsData.forEach(hospital => {
+        if (hospital.capacity === 0) {
+          addNotification(`L'hôpital "${hospital.name}" est complet`, "warning");
+        }
+      });
     } catch (err) {
       setError("Erreur lors du chargement des hôpitaux.");
+      addNotification("Erreur lors du chargement des hôpitaux", "error");
     } finally {
       setLoading(false);
     }
   };
-  fetchHospitalsAndLocations();
 
-
-// Fonction pour calculer la distance entre deux hôpitaux
-const calculateDistance = (hospital1Id, hospital2Id) => {
-  if (!hospitalLocations[hospital1Id] || !hospitalLocations[hospital2Id]) {
-    return null;
-  }
-  
-  const [lat1, lon1] = hospitalLocations[hospital1Id];
-  const [lat2, lon2] = hospitalLocations[hospital2Id];
-  
-  // Formule simplifiée de calcul de distance (Haversine)
-  const R = 6371; // Rayon de la Terre en km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c;
-  
-  return distance.toFixed(1);
-};
-  }, []);
+  // Fonction pour calculer la distance entre deux hôpitaux
+  const calculateDistance = (hospital1Id, hospital2Id) => {
+    if (!hospitalLocations[hospital1Id] || !hospitalLocations[hospital2Id]) {
+      return null;
+    }
+    
+    const [lat1, lon1] = hospitalLocations[hospital1Id];
+    const [lat2, lon2] = hospitalLocations[hospital2Id];
+    
+    // Formule de Haversine
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    return distance.toFixed(1);
+  };
 
   // Vérifier les hôpitaux complets
   useEffect(() => {
@@ -392,6 +458,22 @@ const calculateDistance = (hospital1Id, hospital2Id) => {
     }
   };
 
+  // Chargement initial des données
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        await fetchHospitalsAndLocations();
+        await fetchGDACSAlerts();
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+
+    fetchAllData();
+    const interval = setInterval(fetchGDACSAlerts, 3600000); // Actualisation toutes les heures
+    return () => clearInterval(interval);
+  }, []);
+
   const filteredHospitals = hospitals.filter((hospital) =>
     hospital.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -401,10 +483,8 @@ const calculateDistance = (hospital1Id, hospital2Id) => {
 
   return (
     <div className="hospital-container">
-      {/* Badge de notification */}
-
-         {/* Modal QR Code */}
-         {showQRCode && (
+      {/* Modal QR Code */}
+      {showQRCode && (
         <div className="qr-modal-overlay">
           <div className="qr-modal-content">
             <h3>QR Code - {JSON.parse(qrCodeData)?.name || "Hôpital"}</h3>
@@ -426,6 +506,8 @@ const calculateDistance = (hospital1Id, hospital2Id) => {
           </div>
         </div>
       )}
+
+      {/* Badge de notification */}
       <div 
         className={`notification-badge ${notifications.length > 0 ? 'active' : ''}`} 
         onClick={() => setShowNotificationPanel(!showNotificationPanel)}
@@ -502,6 +584,44 @@ const calculateDistance = (hospital1Id, hospital2Id) => {
         </div>
       )}
 
+      {/* Panneau d'alertes GDACS */}
+      <div className="alerts-panel">
+  <h3>
+    <FaFire /> Alertes Incendies en Tunisie
+    {disasterAlerts.length > 0 && 
+      <span className="alert-badge">{disasterAlerts.length}</span>
+    }
+  </h3>
+  
+  {disasterAlerts.length === 0 ? (
+    <p>Aucun incendie signalé récemment en Tunisie</p>
+  ) : (
+    <ul>
+      {disasterAlerts.map(alert => (
+        <li key={alert.eventid} className={`alert-${alert.alertlevel}`}>
+          <div className="alert-header">
+            <FaFire className="fire-icon" />
+            <strong>{alert.eventname}</strong> 
+            <span className={`alert-level ${alert.alertlevel}`}>
+              ({alert.alertlevel === 'red' ? 'Haute' : 'Moyenne'} gravité)
+            </span>
+          </div>
+          <p><strong>Lieu:</strong> {alert.episodecountry || alert.country}</p>
+          <p><strong>Date:</strong> {new Date(alert.fromdate).toLocaleString()}</p>
+          {alert.alertlevel === "red" && (
+            <button 
+              onClick={() => activateEmergencyProtocol(alert)}
+              className="emergency-btn"
+            >
+              Activer le protocole d'urgence
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
       <div className="header-section">
         <h2>Liste des Hôpitaux</h2>
         <div className="search-add-container">
@@ -541,34 +661,34 @@ const calculateDistance = (hospital1Id, hospital2Id) => {
         {filteredHospitals.length > 0 ? (
           currentHospitals.map((h) => (
             <div 
-              className={`hospital-card ${h.capacity === 0 ? 'completed' : ''}`} 
+              className={`hospital-card ${h.capacity === 0 ? 'completed' : ''} ${h.emergencyProtocol ? 'emergency' : ''}`} 
               key={h._id} 
               onClick={() => handleSelectHospital(h)}
             >
               <h3>{h.name}</h3>
-              
               <p>{h.address}</p>
               {h.capacity === 0 && <p style={{ color: 'red', fontWeight: 'bold' }}>Hôpital complet</p>}
+              {h.emergencyProtocol && <p style={{ color: 'orange', fontWeight: 'bold' }}>Protocole d'urgence activé</p>}
               <button className="edit-button" onClick={(e) => { e.stopPropagation(); handleEdit(h); }}>Modifier</button>
               <button className="delete-button" onClick={(e) => { e.stopPropagation(); handleDelete(h._id); }}>Supprimer</button>
               <button
-  className="qr-button"
-  onClick={(e) => {
-    e.stopPropagation();
-    setQrCodeData(JSON.stringify({
-      id: h._id,
-      name: h.name,
-      address: h.address,
-      phone: h.phone,
-      lastUpdated: new Date().toISOString()
-    }, null, 2)); // Formatage lisible
-    setShowQRCode(true);
-  }}
-  aria-label="Générer QR Code"
->
-  <FaQrcode />
-  <span className="tooltip">Générer QR Code</span>
-</button>
+                className="qr-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQrCodeData(JSON.stringify({
+                    id: h._id,
+                    name: h.name,
+                    address: h.address,
+                    phone: h.phone,
+                    lastUpdated: new Date().toISOString()
+                  }, null, 2));
+                  setShowQRCode(true);
+                }}
+                aria-label="Générer QR Code"
+              >
+                <FaQrcode />
+                <span className="tooltip">Générer QR Code</span>
+              </button>
             </div>
           ))
         ) : (
@@ -592,6 +712,11 @@ const calculateDistance = (hospital1Id, hospital2Id) => {
           <p><strong>Adresse :</strong> {selectedHospital.address}</p>
           <p><strong>Téléphone :</strong> {selectedHospital.phone}</p>
           <p><strong>Capacité :</strong> {selectedHospital.capacity} lits</p>
+          {selectedHospital.emergencyProtocol && (
+            <p style={{ color: 'orange', fontWeight: 'bold' }}>
+              <FaExclamationTriangle /> Protocole d'urgence activé (Capacité d'urgence: {selectedHospital.emergencyCapacity} lits)
+            </p>
+          )}
 
           <h4>Localisation</h4>
           {coordinates ? (
