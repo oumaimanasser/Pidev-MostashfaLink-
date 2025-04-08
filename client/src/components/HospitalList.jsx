@@ -1,0 +1,704 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import NotificationPanel from "./NotificationPanel";
+import "./HospitalList.css";
+import MapComponent from "./MapComponent";
+import { FaCommentMedical, FaBell, FaPlus, FaSearch } from "react-icons/fa";
+import QRCode from "react-qr-code";
+import { FaQrcode } from "react-icons/fa";
+const HospitalList = () => {
+  // États principaux
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingHospital, setEditingHospital] = useState(null);
+  const [selectedHospital, setSelectedHospital] = useState(null);
+  const [hospitalInfos, setHospitalInfos] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [newHospital, setNewHospital] = useState({
+    name: "",
+    address: "",
+    phone: "",
+    capacity: 0,
+  });
+  const [coordinates, setCoordinates] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hospitalsPerPage] = useState(5);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [hospitalLocations, setHospitalLocations] = useState({});
+  const [showQRCode, setShowQRCode] = useState(false);
+const [qrCodeData, setQrCodeData] = useState("");
+  // États pour le chatbot IA
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: "Bonjour ! Je suis l'assistant médical virtuel. Posez-moi vos questions sur les hôpitaux.",
+      sender: "IA",
+      timestamp: new Date()
+    }
+  ]);
+  const [newMessage, setNewMessage] = useState("");
+  const [showChat, setShowChat] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
+  // États pour les médecins
+  const [doctors, setDoctors] = useState([]);
+  const [showDoctorForm, setShowDoctorForm] = useState(false);
+  const [newDoctor, setNewDoctor] = useState({
+    name: "",
+    specialty: "",
+    available: true,
+    hospitalId: ""
+  });
+
+  // Fonction pour ajouter une notification
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now(),
+      message,
+      type,
+      timestamp: new Date()
+    };
+    setNotifications(prev => [newNotification, ...prev].slice(0, 50));
+  };
+
+  // Fonction pour supprimer une notification
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // Fonction pour générer des réponses intelligentes
+  const generateAIResponse = (question) => {
+    const lowerQuestion = question.toLowerCase();
+    
+    // Détection de salutations
+    if (lowerQuestion.includes("bonjour") || lowerQuestion.includes("salut") || lowerQuestion.includes("hello")) {
+      return "Bonjour ! Comment puis-je vous aider concernant les hôpitaux aujourd'hui ?";
+    }
+  
+    // Questions sur les distances entre hôpitaux
+    if (lowerQuestion.includes("distance") || lowerQuestion.includes("loin") || lowerQuestion.includes("temps")) {
+      const hospitalsInQuestion = hospitals.filter(h => 
+        lowerQuestion.includes(h.name.toLowerCase())
+      );
+      
+      if (hospitalsInQuestion.length >= 2) {
+        // Simulation de calcul de distance (à remplacer par un vrai service)
+        const distance = Math.round(Math.random() * 20) + 5;
+        return `La distance approximative entre ${hospitalsInQuestion[0].name} et ${hospitalsInQuestion[1].name} est d'environ ${distance} km.`;
+      }
+      
+      return "Je peux vous informer sur les distances entre hôpitaux. Mentionnez deux hôpitaux dans votre question.";
+    }
+  
+    // Questions sur les médecins spécifiques
+    if (lowerQuestion.includes("médecin") || lowerQuestion.includes("docteur")) {
+      const hospitalMentioned = hospitals.find(h => 
+        lowerQuestion.includes(h.name.toLowerCase())
+      );
+      
+      if (hospitalMentioned) {
+        const hospitalDoctors = doctors.filter(d => d.hospitalId === hospitalMentioned._id);
+        const availableDoctors = hospitalDoctors.filter(d => d.available);
+        
+        if (availableDoctors.length === 0) {
+          return `Actuellement, aucun médecin n'est disponible à l'hôpital ${hospitalMentioned.name}.`;
+        }
+        
+        const specialties = [...new Set(availableDoctors.map(d => d.specialty))];
+        return `À l'hôpital ${hospitalMentioned.name}, il y a ${availableDoctors.length} médecins disponibles dans les spécialités suivantes : ${specialties.join(', ')}.`;
+      }
+      
+      return "Je peux vous informer sur les médecins disponibles. Veuillez préciser le nom de l'hôpital.";
+    }
+  
+    // Réponse par défaut plus utile
+    return `Je suis un assistant spécialisé dans les informations hospitalières. Voici ce que je peux faire :
+    - Donner des informations sur les lits disponibles
+    - Lister les médecins par hôpital
+    - Indiquer les distances entre hôpitaux
+    - Fournir les services disponibles
+    
+    Comment puis-je vous aider précisément ?`;
+  };
+    
+    
+
+  // Fonction pour envoyer un message
+  const sendMessage = async () => {
+    if (!newMessage.trim()) return;
+  
+    // Ajouter le message utilisateur
+    const userMessage = {
+      id: Date.now(),
+      text: newMessage,
+      timestamp: new Date(),
+      sender: "Vous"
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setNewMessage("");
+    
+    setIsTyping(true);
+    
+    try {
+      // Attendre un peu pour le réalisme
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const aiResponse = await generateAIResponse(newMessage);
+      const iaMessage = {
+        id: Date.now() + 1,
+        text: aiResponse,
+        timestamp: new Date(),
+        sender: "IA"
+      };
+      setMessages(prev => [...prev, iaMessage]);
+    } catch (err) {
+      console.error("Erreur génération réponse IA:", err);
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: "Désolé, une erreur s'est produite. Veuillez reformuler votre question.",
+        timestamp: new Date(),
+        sender: "IA"
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Chargement initial des hôpitaux
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/hospitals");
+        const hospitalsData = res.data.map(h => ({ ...h, hasBeenNotified: false }));
+        setHospitals(hospitalsData);
+        
+        hospitalsData.forEach(hospital => {
+          if (hospital.capacity === 0) {
+            addNotification(`L'hôpital "${hospital.name}" est complet`, "warning");
+            setHospitals(prev => prev.map(h => 
+              h._id === hospital._id ? { ...h, hasBeenNotified: true } : h
+            ));
+          }
+        });
+      } catch (err) {
+        setError("Erreur lors du chargement des hôpitaux.");
+        addNotification("Erreur lors du chargement des hôpitaux", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHospitals();
+    // Ajoutez cet état
+
+
+// Modifiez le useEffect de chargement initial
+
+  const fetchHospitalsAndLocations = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/hospitals");
+      const hospitalsData = res.data.map(h => ({ ...h, hasBeenNotified: false }));
+      
+      // Récupérer les coordonnées pour chaque hôpital
+      const locations = {};
+      for (const hospital of hospitalsData) {
+        const coords = await geocodeAddress(hospital.address);
+        if (coords) {
+          locations[hospital._id] = coords;
+        }
+      }
+      
+      setHospitalLocations(locations);
+      setHospitals(hospitalsData);
+      
+    } catch (err) {
+      setError("Erreur lors du chargement des hôpitaux.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchHospitalsAndLocations();
+
+
+// Fonction pour calculer la distance entre deux hôpitaux
+const calculateDistance = (hospital1Id, hospital2Id) => {
+  if (!hospitalLocations[hospital1Id] || !hospitalLocations[hospital2Id]) {
+    return null;
+  }
+  
+  const [lat1, lon1] = hospitalLocations[hospital1Id];
+  const [lat2, lon2] = hospitalLocations[hospital2Id];
+  
+  // Formule simplifiée de calcul de distance (Haversine)
+  const R = 6371; // Rayon de la Terre en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  
+  return distance.toFixed(1);
+};
+  }, []);
+
+  // Vérifier les hôpitaux complets
+  useEffect(() => {
+    hospitals.forEach(hospital => {
+      if (hospital.capacity === 0 && !hospital.hasBeenNotified) {
+        addNotification(`L'hôpital "${hospital.name}" est complet`, "warning");
+        setHospitals(prev => prev.map(h => 
+          h._id === hospital._id ? { ...h, hasBeenNotified: true } : h
+        ));
+      }
+    });
+  }, [hospitals]);
+
+  // Fonction pour charger les médecins d'un hôpital
+  const fetchDoctors = async (hospitalId) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/hospitals/${hospitalId}/doctors`);
+      setDoctors(res.data);
+    } catch (err) {
+      addNotification("Erreur lors du chargement des médecins", "error");
+    }
+  };
+
+  // Pagination
+  const indexOfLastHospital = currentPage * hospitalsPerPage;
+  const indexOfFirstHospital = indexOfLastHospital - hospitalsPerPage;
+  const currentHospitals = hospitals.slice(indexOfFirstHospital, indexOfLastHospital);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleChange = (e) => {
+    setNewHospital({ ...newHospital, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (editingHospital) {
+      try {
+        await axios.put(`http://localhost:5000/hospitals/${editingHospital._id}`, newHospital);
+        setHospitals(prevHospitals =>
+          prevHospitals.map((h) => (h._id === editingHospital._id ? { ...h, ...newHospital, hasBeenNotified: false } : h))
+        );
+        setEditingHospital(null);
+        addNotification("Hôpital mis à jour avec succès", "success");
+      } catch (err) {
+        addNotification("Erreur lors de la mise à jour de l'hôpital", "error");
+      }
+    } else {
+      try {
+        const res = await axios.post("http://localhost:5000/hospitals", { ...newHospital, hasBeenNotified: false });
+        setHospitals([...hospitals, res.data]);
+        addNotification("Hôpital ajouté avec succès", "success");
+      } catch (err) {
+        addNotification("Erreur lors de l'ajout de l'hôpital", "error");
+      }
+    }
+    setShowForm(false);
+    setNewHospital({ name: "", address: "", phone: "", capacity: 0 });
+  };
+
+  const handleEdit = (hospital) => {
+    setEditingHospital(hospital);
+    setNewHospital(hospital);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Voulez-vous vraiment supprimer cet hôpital ?")) {
+      try {
+        await axios.delete(`http://localhost:5000/hospitals/${id}`);
+        setHospitals(hospitals.filter((h) => h._id !== id));
+        addNotification("Hôpital supprimé avec succès", "success");
+      } catch (err) {
+        addNotification("Erreur lors de la suppression de l'hôpital", "error");
+      }
+    }
+  };
+
+  const handleSelectHospital = async (hospital) => {
+    setSelectedHospital(hospital);
+    setNewDoctor(prev => ({ ...prev, hospitalId: hospital._id }));
+    try {
+      const res = await axios.get(`http://localhost:5000/hospitals/hospitals/${hospital._id}/info`);
+      setHospitalInfos(res.data);
+      await fetchDoctors(hospital._id);
+
+      const coords = await geocodeAddress(hospital.address);
+      setCoordinates(coords || null);
+    } catch (err) {
+      console.error("Erreur lors de la récupération des informations :", err);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedHospital(null);
+    setHospitalInfos([]);
+    setCoordinates(null);
+  };
+
+  const geocodeAddress = async (address) => {
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`
+      );
+      if (response.data && response.data.length > 0) {
+        const { lat, lon } = response.data[0];
+        return [parseFloat(lat), parseFloat(lon)];
+      }
+    } catch (err) {
+      console.error("Erreur lors du géocodage :", err);
+    }
+    return null;
+  };
+
+  // Fonction pour gérer l'ajout/modification d'un médecin
+  const handleDoctorSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (newDoctor._id) {
+        await axios.put(`http://localhost:5000/hospitals/${newDoctor._id}`, newDoctor);
+        addNotification("Médecin mis à jour avec succès", "success");
+      } else {
+        await axios.post(`http://localhost:5000/hospitals/${newDoctor.hospitalId}/doctors`, newDoctor);
+        addNotification("Médecin ajouté avec succès", "success");
+      }
+      await fetchDoctors(newDoctor.hospitalId);
+      setShowDoctorForm(false);
+      setNewDoctor({ name: "", specialty: "", available: true, hospitalId: newDoctor.hospitalId });
+    } catch (err) {
+      addNotification("Erreur lors de l'opération sur le médecin", "error");
+    }
+  };
+
+  // Fonction pour supprimer un médecin
+  const handleDeleteDoctor = async (id) => {
+    if (window.confirm("Voulez-vous vraiment supprimer ce médecin ?")) {
+      try {
+        await axios.delete(`http://localhost:5000/hospitals/${id}`);
+        addNotification("Médecin supprimé avec succès", "success");
+        await fetchDoctors(selectedHospital._id);
+      } catch (err) {
+        addNotification("Erreur lors de la suppression du médecin", "error");
+      }
+    }
+  };
+
+  const filteredHospitals = hospitals.filter((hospital) =>
+    hospital.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) return <div className="loading-spinner">Chargement en cours...</div>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+
+  return (
+    <div className="hospital-container">
+      {/* Badge de notification */}
+
+         {/* Modal QR Code */}
+         {showQRCode && (
+        <div className="qr-modal-overlay">
+          <div className="qr-modal-content">
+            <h3>QR Code - {JSON.parse(qrCodeData)?.name || "Hôpital"}</h3>
+            <div className="qr-code-wrapper">
+              <QRCode 
+                value={qrCodeData} 
+                size={256}
+                level="H"
+                bgColor="#ffffff"
+                fgColor="#000000"
+              />
+            </div>
+            <button 
+              onClick={() => setShowQRCode(false)}
+              className="close-button"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
+      <div 
+        className={`notification-badge ${notifications.length > 0 ? 'active' : ''}`} 
+        onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+      >
+        <FaBell />
+        {notifications.length > 0 && <span>{notifications.length}</span>}
+      </div>
+
+      {/* Panel de notifications */}
+      {showNotificationPanel && (
+        <NotificationPanel 
+          notifications={notifications} 
+          onClose={() => setShowNotificationPanel(false)}
+          onRemove={removeNotification}
+        />
+      )}
+
+      {/* Bouton flottant pour le chatbot */}
+      <div 
+        className="chat-float-button" 
+        onClick={() => setShowChat(!showChat)}
+      >
+        <FaCommentMedical />
+      </div>
+
+      {/* Chatbot IA */}
+      {showChat && (
+        <div className="chatbot-container">
+          <div className="chatbot-header">
+            <h3>Assistant Hospitalier IA</h3>
+            <button onClick={() => setShowChat(false)}>×</button>
+          </div>
+          <div className="chatbot-messages">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`message ${msg.sender === "IA" ? 'ia-message' : 'user-message'}`}>
+                <div className="message-content">
+                  {msg.sender === "IA" && (
+                    <div className="ia-avatar">IA</div>
+                  )}
+                  <div className="message-text">
+                    <p>{msg.text}</p>
+                    <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="message ia-message">
+                <div className="message-content">
+                  <div className="ia-avatar">IA</div>
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="chatbot-input">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Posez votre question sur les hôpitaux..."
+              onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <button onClick={sendMessage}>
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="header-section">
+        <h2>Liste des Hôpitaux</h2>
+        <div className="search-add-container">
+          <div className="search-bar-container">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Rechercher un hôpital..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-bar"
+            />
+          </div>
+          <button 
+            className="add-button" 
+            onClick={() => { setShowForm(!showForm); setEditingHospital(null); }}
+          >
+            <FaPlus /> {showForm ? "Fermer" : "Ajouter un Hôpital"}
+          </button>
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="form-popup">
+          <h3>{editingHospital ? "Modifier l'Hôpital" : "Ajouter un Hôpital"}</h3>
+          <form onSubmit={handleSubmit}>
+            <input type="text" name="name" placeholder="Nom" value={newHospital.name} onChange={handleChange} required />
+            <input type="text" name="address" placeholder="Adresse" value={newHospital.address} onChange={handleChange} required />
+            <input type="text" name="phone" placeholder="Téléphone" value={newHospital.phone} onChange={handleChange} required />
+            <input type="number" name="capacity" placeholder="Capacité" value={newHospital.capacity} onChange={handleChange} required />
+            <button type="submit">{editingHospital ? "Modifier" : "Ajouter"}</button>
+          </form>
+        </div>
+      )}
+
+      <div className="hospital-list">
+        {filteredHospitals.length > 0 ? (
+          currentHospitals.map((h) => (
+            <div 
+              className={`hospital-card ${h.capacity === 0 ? 'completed' : ''}`} 
+              key={h._id} 
+              onClick={() => handleSelectHospital(h)}
+            >
+              <h3>{h.name}</h3>
+              
+              <p>{h.address}</p>
+              {h.capacity === 0 && <p style={{ color: 'red', fontWeight: 'bold' }}>Hôpital complet</p>}
+              <button className="edit-button" onClick={(e) => { e.stopPropagation(); handleEdit(h); }}>Modifier</button>
+              <button className="delete-button" onClick={(e) => { e.stopPropagation(); handleDelete(h._id); }}>Supprimer</button>
+              <button
+  className="qr-button"
+  onClick={(e) => {
+    e.stopPropagation();
+    setQrCodeData(JSON.stringify({
+      id: h._id,
+      name: h.name,
+      address: h.address,
+      phone: h.phone,
+      lastUpdated: new Date().toISOString()
+    }, null, 2)); // Formatage lisible
+    setShowQRCode(true);
+  }}
+  aria-label="Générer QR Code"
+>
+  <FaQrcode />
+  <span className="tooltip">Générer QR Code</span>
+</button>
+            </div>
+          ))
+        ) : (
+          <p>Aucun hôpital trouvé.</p>
+        )}
+      </div>
+
+      {/* Pagination */}
+      <div className="pagination">
+        {Array.from({ length: Math.ceil(filteredHospitals.length / hospitalsPerPage) }, (_, index) => (
+          <button key={index} onClick={() => paginate(index + 1)} className={currentPage === index + 1 ? "active" : ""}>
+            {index + 1}
+          </button>
+        ))}
+      </div>
+
+      {selectedHospital && (
+        <div className="hospital-details">
+          <h3>Détails de l'Hôpital</h3>
+          <p><strong>Nom :</strong> {selectedHospital.name}</p>
+          <p><strong>Adresse :</strong> {selectedHospital.address}</p>
+          <p><strong>Téléphone :</strong> {selectedHospital.phone}</p>
+          <p><strong>Capacité :</strong> {selectedHospital.capacity} lits</p>
+
+          <h4>Localisation</h4>
+          {coordinates ? (
+            <MapComponent position={coordinates} />
+          ) : (
+            <p style={{ color: "red" }}>La localisation de cet hôpital n'est pas disponible.</p>
+          )}
+
+          <h4>Informations supplémentaires</h4>
+          {hospitalInfos.length > 0 ? (
+            <table>
+              <thead>
+                <tr>
+                  <th>Services</th>
+                  <th>Départements</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hospitalInfos.map((info) => (
+                  <tr key={info._id}>
+                    <td>{info.services}</td>
+                    <td>{info.departments}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>Aucune information supplémentaire disponible.</p>
+          )}
+
+          <h4>Médecins disponibles</h4>
+          {doctors.length > 0 ? (
+            <table className="doctors-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Spécialité</th>
+                  <th>Disponibilité</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {doctors.map((doctor) => (
+                  <tr key={doctor._id}>
+                    <td>{doctor.name}</td>
+                    <td>{doctor.specialty}</td>
+                    <td>{doctor.available ? "Disponible" : "Non disponible"}</td>
+                    <td>
+                      <button onClick={() => {
+                        setNewDoctor(doctor);
+                        setShowDoctorForm(true);
+                      }}>Modifier</button>
+                      <button onClick={() => handleDeleteDoctor(doctor._id)}>Supprimer</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>Aucun médecin enregistré pour cet hôpital.</p>
+          )}
+
+          <button onClick={() => setShowDoctorForm(true)}>Ajouter un médecin</button>
+
+          {showDoctorForm && (
+            <div className="form-popup">
+              <h3>{newDoctor._id ? "Modifier le Médecin" : "Ajouter un Médecin"}</h3>
+              <form onSubmit={handleDoctorSubmit}>
+                <input 
+                  type="text" 
+                  name="name" 
+                  placeholder="Nom" 
+                  value={newDoctor.name} 
+                  onChange={(e) => setNewDoctor({...newDoctor, name: e.target.value})} 
+                  required 
+                />
+                <input 
+                  type="text" 
+                  name="specialty" 
+                  placeholder="Spécialité" 
+                  value={newDoctor.specialty} 
+                  onChange={(e) => setNewDoctor({...newDoctor, specialty: e.target.value})} 
+                  required 
+                />
+                <label>
+                  Disponible:
+                  <input 
+                    type="checkbox" 
+                    name="available" 
+                    checked={newDoctor.available} 
+                    onChange={(e) => setNewDoctor({...newDoctor, available: e.target.checked})} 
+                  />
+                </label>
+                <button type="submit">{newDoctor._id ? "Modifier" : "Ajouter"}</button>
+                <button type="button" onClick={() => {
+                  setShowDoctorForm(false);
+                  setNewDoctor({ name: "", specialty: "", available: true, hospitalId: selectedHospital._id });
+                }}>Annuler</button>
+              </form>
+            </div>
+          )}
+
+          <button onClick={handleCloseDetails}>Fermer</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default HospitalList;
