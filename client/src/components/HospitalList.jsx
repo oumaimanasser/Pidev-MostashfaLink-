@@ -647,15 +647,59 @@ const HospitalList = () => {
 
       {showForm && (
         <div className="form-popup">
-          <h3>{editingHospital ? "Modifier l'Hôpital" : "Ajouter un Hôpital"}</h3>
-          <form onSubmit={handleSubmit}>
-            <input type="text" name="name" placeholder="Nom" value={newHospital.name} onChange={handleChange} required />
-            <input type="text" name="address" placeholder="Adresse" value={newHospital.address} onChange={handleChange} required />
-            <input type="text" name="phone" placeholder="Téléphone" value={newHospital.phone} onChange={handleChange} required />
-            <input type="number" name="capacity" placeholder="Capacité" value={newHospital.capacity} onChange={handleChange} required />
-            <button type="submit">{editingHospital ? "Modifier" : "Ajouter"}</button>
-          </form>
-        </div>
+        <h3>{editingHospital ? "Modifier l'Hôpital" : "Ajouter un Hôpital"}</h3>
+        <form onSubmit={handleSubmit}>
+          <input 
+            type="text" 
+            name="name" 
+            placeholder="Nom de l'hôpital" 
+            value={newHospital.name} 
+            onChange={handleChange} 
+            required 
+          />
+          <input 
+            type="text" 
+            name="address" 
+            placeholder="Adresse complète" 
+            value={newHospital.address} 
+            onChange={handleChange} 
+            required 
+          />
+          <input 
+            type="text" 
+            name="phone" 
+            placeholder="Numéro de téléphone" 
+            value={newHospital.phone} 
+            onChange={handleChange} 
+            required 
+          />
+          <input 
+            type="number" 
+            name="capacity" 
+            placeholder="Capacité (nombre de lits)" 
+            value={newHospital.capacity} 
+            onChange={handleChange} 
+            required 
+            min="0"
+          />
+          <div className="form-actions">
+            <button type="submit">
+              {editingHospital ? "Enregistrer" : "Ajouter"}
+            </button>
+            <button 
+              type="button" 
+              onClick={() => {
+                setShowForm(false);
+                setEditingHospital(null);
+                setNewHospital({ name: "", address: "", phone: "", capacity: 0 });
+              }}
+              className="cancel-button"
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
       )}
 
       <div className="hospital-list">
@@ -783,42 +827,54 @@ const HospitalList = () => {
           <button onClick={() => setShowDoctorForm(true)}>Ajouter un médecin</button>
 
           {showDoctorForm && (
-            <div className="form-popup">
-              <h3>{newDoctor._id ? "Modifier le Médecin" : "Ajouter un Médecin"}</h3>
-              <form onSubmit={handleDoctorSubmit}>
-                <input 
-                  type="text" 
-                  name="name" 
-                  placeholder="Nom" 
-                  value={newDoctor.name} 
-                  onChange={(e) => setNewDoctor({...newDoctor, name: e.target.value})} 
-                  required 
-                />
-                <input 
-                  type="text" 
-                  name="specialty" 
-                  placeholder="Spécialité" 
-                  value={newDoctor.specialty} 
-                  onChange={(e) => setNewDoctor({...newDoctor, specialty: e.target.value})} 
-                  required 
-                />
-                <label>
-                  Disponible:
-                  <input 
-                    type="checkbox" 
-                    name="available" 
-                    checked={newDoctor.available} 
-                    onChange={(e) => setNewDoctor({...newDoctor, available: e.target.checked})} 
-                  />
-                </label>
-                <button type="submit">{newDoctor._id ? "Modifier" : "Ajouter"}</button>
-                <button type="button" onClick={() => {
-                  setShowDoctorForm(false);
-                  setNewDoctor({ name: "", specialty: "", available: true, hospitalId: selectedHospital._id });
-                }}>Annuler</button>
-              </form>
-            </div>
-          )}
+  <div className="form-popup doctor-form">
+    <h3>{newDoctor._id ? "Modifier le Médecin" : "Ajouter un Médecin"}</h3>
+    <form onSubmit={handleDoctorSubmit}>
+      <input 
+        type="text" 
+        name="name" 
+        placeholder="Nom complet" 
+        value={newDoctor.name} 
+        onChange={(e) => setNewDoctor({...newDoctor, name: e.target.value})} 
+        required 
+      />
+      <input 
+        type="text" 
+        name="specialty" 
+        placeholder="Spécialité médicale" 
+        value={newDoctor.specialty} 
+        onChange={(e) => setNewDoctor({...newDoctor, specialty: e.target.value})} 
+        required 
+      />
+      <div className="form-row">
+        <label>
+          Disponible:
+          <input 
+            type="checkbox" 
+            name="available" 
+            checked={newDoctor.available} 
+            onChange={(e) => setNewDoctor({...newDoctor, available: e.target.checked})} 
+          />
+        </label>
+      </div>
+      <div className="form-actions">
+        <button type="submit">
+          {newDoctor._id ? "Enregistrer" : "Ajouter"}
+        </button>
+        <button 
+          type="button" 
+          onClick={() => {
+            setShowDoctorForm(false);
+            setNewDoctor({ name: "", specialty: "", available: true, hospitalId: selectedHospital._id });
+          }}
+          className="cancel-button"
+        >
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+)}
 
           <button onClick={handleCloseDetails}>Fermer</button>
         </div>
