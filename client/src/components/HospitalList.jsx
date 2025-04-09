@@ -505,7 +505,7 @@ const HospitalList = () => {
             </button>
           </div>
         </div>
-      )}
+      )} 
 
       {/* Badge de notification */}
       <div 
@@ -585,6 +585,7 @@ const HospitalList = () => {
       )}
 
       {/* Panneau d'alertes GDACS */}
+      {/* Panneau d'alertesfff*/}
       <div className="alerts-panel">
   <h3>
     <FaFire /> Alertes Incendies en Tunisie
