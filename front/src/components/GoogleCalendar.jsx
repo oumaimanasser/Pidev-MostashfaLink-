@@ -21,7 +21,17 @@ const GoogleCalendar = () => {
                 scope: SCOPES
             }).then(() => {
                 console.log('✅ Google API Initialized');
-                fetchEvents();
+
+                fetchEvents(); // Chargement initial
+
+                // 🔁 Rafraîchissement toutes les 10 secondes
+                const interval = setInterval(() => {
+                    console.log('🔁 Rafraîchissement automatique');
+                    fetchEvents();
+                }, 10000);
+
+                // Nettoyage
+                return () => clearInterval(interval);
             }).catch((error) => {
                 console.error('❌ Erreur init API Google', error);
             });
@@ -44,7 +54,12 @@ const GoogleCalendar = () => {
 
     const fetchGoogleCalendarEvents = async () => {
         try {
-            const accessToken = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+            const auth = gapi.auth2.getAuthInstance();
+            if (!auth || !auth.isSignedIn.get()) {
+                return []; // ❗ Pas connecté à Google
+            }
+
+            const accessToken = auth.currentUser.get().getAuthResponse().access_token;
             const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
                 method: 'GET',
                 headers: {
@@ -128,13 +143,12 @@ const GoogleCalendar = () => {
         setCurrentView(newView);
     };
 
-    // 🎨 Style selon le rôle
     const eventPropGetter = (event) => {
-        let backgroundColor = '#2ECC71'; // par défaut : vert
+        let backgroundColor = '#2ECC71';
         if (event.role) {
             if (event.role.toLowerCase().includes('médecin')) backgroundColor = '#3498DB';
             else if (event.role.toLowerCase().includes('infirmier')) backgroundColor = '#1ABC9C';
-            else backgroundColor = '#F39C12'; // autre
+            else backgroundColor = '#F39C12';
         }
 
         return {
