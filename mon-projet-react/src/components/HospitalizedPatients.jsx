@@ -1,9 +1,8 @@
-// eslint-disable-next-line no-unused-vars
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Table, Button, Modal, Form, Badge, Spinner } from "react-bootstrap";
 import { FaProcedures, FaUserMd, FaAmbulance, FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-import "./HospitalizedPatients.css";
+import "../assets/HospitalizedPatients.css";
 
 const HospitalizedPatients = () => {
   const [patients, setPatients] = useState([]);
@@ -28,10 +27,10 @@ const HospitalizedPatients = () => {
   }, []);
 
   useEffect(() => {
-    const results = patients.filter(patient =>
-      patient.idPatient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.idHospitalization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.roomNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    const results = patients.filter(patient => 
+      (patient.idPatient && String(patient.idPatient).toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (patient.idHospitalization && patient.idHospitalization.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (patient.roomNumber && patient.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     setFilteredPatients(results);
   }, [searchTerm, patients]);
@@ -161,7 +160,7 @@ const HospitalizedPatients = () => {
             <FaAmbulance />
           </div>
           <div className="stat-content">
-            <h3>Sorties aujourd'hui</h3>
+            <h3>Sorties aujourdhui</h3>
             <p>
               {patients.filter(p => {
                 const today = new Date().toISOString().split('T')[0];
@@ -182,45 +181,30 @@ const HospitalizedPatients = () => {
           </div>
         ) : (
           <Table striped bordered hover responsive className="patients-table">
-            <thead>
-              <tr>
-                <th>ID Hospitalisation</th>
-                <th>ID Patient</th>
-                <th>Date Admission</th>
-                <th>Date Sortie</th>
-                <th>Chambre</th>
-                <th>Statut</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPatients.length > 0 ? (
-                filteredPatients.map((patient) => (
-                  <tr key={patient._id}>
-                    <td>{patient.idHospitalization}</td>
-                    <td>{patient.idPatient}</td>
-                    <td>{formatDate(patient.admissionDate)}</td>
-                    <td>{formatDate(patient.dischargeDate)}</td>
-                    <td>{patient.roomNumber || 'N/A'}</td>
-                    <td>{getStatusBadge(patient.discharge)}</td>
-                    <td className="actions-cell">
-                      <Button variant="outline-primary" size="sm" onClick={() => handleEditClick(patient)}>
-                        <FaEdit /> Modifier
-                      </Button>
-                      <Button variant="outline-danger" size="sm" onClick={() => handleDelete(patient._id)}>
-                        <FaTrash /> Supprimer
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="text-center">
-                    Aucun patient trouvé
-                  </td>
-                </tr>
-              )}
-            </tbody>
+           <thead>
+  <tr>
+    <th>ID Hospitalisation</th>
+    <th>Date Admission</th>
+    <th>Date Sortie</th>
+    <th>Chambre</th>
+    <th>Statut</th>
+    <th>Actions</th>
+  </tr>
+</thead>
+<tbody>
+  {filteredPatients.map((patient) => (
+    <tr key={patient._id}>
+      <td>{patient.idHospitalization}</td>
+      <td>{formatDate(patient.admissionDate)}</td>
+      <td>{formatDate(patient.dischargeDate)}</td>
+      <td>{patient.roomNumber || 'N/A'}</td>
+      <td>{getStatusBadge(patient.discharge)}</td>
+      <td className="actions-cell">
+        {/* Boutons d'action */}
+      </td>
+    </tr>
+  ))}
+</tbody>
           </Table>
         )}
       </div>
