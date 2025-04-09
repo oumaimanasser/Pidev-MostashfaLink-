@@ -1,5 +1,3 @@
-/* Styles améliorés pour l'application de gestion des dossiers médicaux */
-
 :root {
   --primary-color: #2563eb;
   --primary-hover: #1d4ed8;
@@ -20,6 +18,21 @@
   --radius: 0.5rem;
 }
 
+.dark-mode {
+  --bg-main: #1e293b;
+  --bg-card: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --border-color: #475569;
+  --primary-color: #60a5fa;
+  --primary-hover: #3b82f6;
+  --success-color: #34d399;
+  --success-hover: #10b981;
+  --danger-color: #f87171;
+  --danger-hover: #ef4444;
+  --warning-color: #fbbf24;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -33,19 +46,21 @@ body {
   line-height: 1.5;
 }
 
-/* Conteneur principal */
 .app-container {
   max-width: 1280px;
   margin: 0 auto;
   padding: 1.5rem;
+  background-color: var(--bg-main);
+  min-height: 100vh; /* Assure que le fond couvre toute la hauteur */
 }
 
-/* En-tête */
 .app-header {
   margin-bottom: 2rem;
   padding: 1.5rem 0;
   border-bottom: 1px solid var(--border-color);
   text-align: center;
+  position: relative;
+  background-color: var(--bg-main); /* Hérite du fond */
 }
 
 .app-header h1 {
@@ -55,7 +70,24 @@ body {
   letter-spacing: -0.025em;
 }
 
-/* Messages d'alerte */
+.dark-mode-toggle {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.dark-mode-toggle:hover {
+  background-color: var(--primary-hover);
+}
+
 .alert {
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
@@ -64,6 +96,8 @@ body {
   justify-content: space-between;
   align-items: center;
   animation: fade-in 0.3s ease-in-out;
+  background-color: var(--bg-card); /* Hérite du fond */
+  color: var(--text-primary);
 }
 
 @keyframes fade-in {
@@ -71,13 +105,13 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.alert.success {
+.alert-success {
   background-color: rgba(16, 185, 129, 0.1);
   color: var(--success-color);
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.alert.error {
+.alert-error {
   background-color: rgba(239, 68, 68, 0.1);
   color: var(--danger-color);
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -91,13 +125,13 @@ body {
   line-height: 1;
   opacity: 0.7;
   transition: opacity 0.2s;
+  color: var(--text-primary);
 }
 
 .close-btn:hover {
   opacity: 1;
 }
 
-/* Section de recherche */
 .search-section {
   margin-bottom: 2rem;
   background-color: var(--bg-card);
@@ -126,6 +160,8 @@ body {
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .search-group input:focus {
@@ -165,14 +201,12 @@ body {
   background-color: var(--text-primary);
 }
 
-/* Disposition du contenu principal */
 .content-wrapper {
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
 }
 
-/* Section de formulaire */
 .form-section {
   flex: 1;
   min-width: 320px;
@@ -222,6 +256,8 @@ body {
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .form-group input:focus,
@@ -273,7 +309,6 @@ body {
   background-color: var(--danger-hover);
 }
 
-/* Section des enregistrements */
 .records-section {
   flex: 2;
   min-width: 320px;
@@ -349,7 +384,7 @@ body {
 .edit-btn,
 .delete-btn,
 .add-consultation-btn,
-.export-btn {  /* Ajout du style pour export-btn */
+.export-btn {
   padding: 0.5rem 0.875rem;
   border: none;
   border-radius: var(--radius);
@@ -389,8 +424,8 @@ body {
   background-color: var(--primary-hover);
 }
 
-.export-btn {  /* Style spécifique pour export-btn */
-  background-color: #f59e0b; /* Même couleur que edit-btn pour cohérence */
+.export-btn {
+  background-color: #f59e0b;
   color: white;
 }
 
@@ -399,7 +434,7 @@ body {
 }
 
 .export-btn:disabled {
-  background-color: #d1d5db; /* Gris clair pour indiquer désactivé */
+  background-color: #d1d5db;
   cursor: not-allowed;
 }
 
@@ -437,7 +472,6 @@ body {
   padding: 2rem 0;
 }
 
-/* Modal pour le formulaire de consultation */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -489,7 +523,6 @@ body {
   background-color: var(--primary-color);
 }
 
-/* Bouton de fermeture de la modal */
 .close-modal-btn {
   position: absolute;
   top: 1rem;
@@ -509,7 +542,6 @@ body {
   color: var(--danger-hover);
 }
 
-/* Consultation card */
 .consultation-card {
   background-color: rgba(37, 99, 235, 0.05);
   border: 1px solid var(--border-color);
@@ -520,13 +552,13 @@ body {
 
 .consultation-card p {
   margin-bottom: 0.5rem;
+  color: var(--text-secondary);
 }
 
-.consultation-card p:last-child {
-  margin-bottom: 0;
+.consultation-card p strong {
+  color: var(--text-primary);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .content-wrapper {
     flex-direction: column;

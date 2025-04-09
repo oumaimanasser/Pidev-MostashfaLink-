@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
-// Configuration de l'URL de base pour les requêtes API
 const API_URL = 'http://localhost:3001/api/medical-records';
 const CONSULTATION_API_URL = 'http://localhost:3001/api/consultations';
 const EXPORT_API_URL = 'http://localhost:3001/api/export';
@@ -32,6 +31,7 @@ function App() {
     const [showConsultationForm, setShowConsultationForm] = useState(false);
     const [editingConsultation, setEditingConsultation] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [darkMode, setDarkMode] = useState(false);
 
     useEffect(() => {
         fetchAllRecordsWithConsultations();
@@ -41,6 +41,7 @@ function App() {
         try {
             const recordsResponse = await axios.get(API_URL);
             const records = recordsResponse.data;
+            console.log('Records fetched:', records); // Log pour vérifier les données
 
             const recordsWithConsultations = await Promise.all(
                 records.map(async (record) => {
@@ -48,15 +49,17 @@ function App() {
                         const consultationsResponse = await axios.get(`${CONSULTATION_API_URL}/${record._id}/consultations`);
                         return { ...record, consultations: consultationsResponse.data };
                     } catch (error) {
-                        console.error(`Erreur lors du chargement des consultations pour le dossier ${record._id}:`, error);
+                        console.error(`Erreur consultations pour ${record._id}:`, error);
                         return { ...record, consultations: [] };
                     }
                 })
             );
 
+            console.log('Records with consultations:', recordsWithConsultations); // Log après enrichissement
             setMedicalRecords(recordsWithConsultations);
             setMessage({ text: 'Dossiers médicaux chargés avec succès', type: 'success' });
         } catch (error) {
+            console.error('Erreur fetchAllRecordsWithConsultations:', error);
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
         }
     };
@@ -88,7 +91,7 @@ function App() {
                         const consultationsResponse = await axios.get(`${CONSULTATION_API_URL}/${record._id}/consultations`);
                         return { ...record, consultations: consultationsResponse.data };
                     } catch (error) {
-                        console.error(`Erreur lors du chargement des consultations pour le dossier ${record._id}:`, error);
+                        console.error(`Erreur consultations pour ${record._id}:`, error);
                         return { ...record, consultations: [] };
                     }
                 })
@@ -237,10 +240,18 @@ function App() {
     const resetConsultationForm = () => { setConsultationFormData({ idConsultation: '', consultationDate: '', doctor: '', prescription: '', treatment: '', medicalRecordId: '' }); setEditingConsultation(null); setShowConsultationForm(false); };
     const formatDate = (dateString) => new Date(dateString).toLocaleString();
 
+    const toggleDarkMode = () => {
+        setDarkMode(prev => !prev);
+        console.log('Dark mode toggled:', !darkMode); // Log pour vérifier
+    };
+
     return (
-        <div className="app-container">
+        <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
             <header className="app-header">
                 <h1>Gestion des Dossiers Médicaux</h1>
+                <button onClick={toggleDarkMode} className="dark-mode-toggle">
+                    {darkMode ? 'Mode clair' : 'Mode sombre'}
+                </button>
             </header>
 
             {message.text && (
@@ -254,11 +265,33 @@ function App() {
                 <section className="search-section">
                     <div className="search-container">
                         <div className="search-group">
-                            <input type="text" placeholder="Rechercher par ID du dossier" value={searchId} onChange={(e) => setSearchId(e.target.value)} />
+                            <input
+                                type="text"
+                                list="recordSuggestions"
+                                placeholder="Rechercher par ID du dossier"
+                                value={searchId}
+                                onChange={(e) => setSearchId(e.target.value)}
+                            />
+                            <datalist id="recordSuggestions">
+                                {medicalRecords.map(record => (
+                                    <option key={record._id} value={record.idRecord.toString()} />
+                                ))}
+                            </datalist>
                             <button onClick={fetchRecordById}>Rechercher</button>
                         </div>
                         <div className="search-group">
-                            <input type="text" placeholder="Rechercher par ID du patient" value={searchPatientId} onChange={(e) => setSearchPatientId(e.target.value)} />
+                            <input
+                                type="text"
+                                list="patientSuggestions"
+                                placeholder="Rechercher par ID du patient"
+                                value={searchPatientId}
+                                onChange={(e) => setSearchPatientId(e.target.value)}
+                            />
+                            <datalist id="patientSuggestions">
+                                {[...new Set(medicalRecords.map(record => record.idPatient))].map(idPatient => (
+                                    <option key={idPatient} value={idPatient.toString()} />
+                                ))}
+                            </datalist>
                             <button onClick={fetchRecordsByPatientId}>Rechercher</button>
                         </div>
                         <button className="reset-btn" onClick={fetchAllRecordsWithConsultations}>Afficher tous les dossiers</button>
