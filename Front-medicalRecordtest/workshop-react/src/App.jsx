@@ -33,6 +33,13 @@ function App() {
     const [isExporting, setIsExporting] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
 
+    // Pagination pour les dossiers médicaux
+    const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 2; // 2 dossiers par page
+
+    // Gestion de l'affichage des consultations (1 par défaut + flèche pour tout afficher)
+    const [expandedConsultations, setExpandedConsultations] = useState({});
+
     useEffect(() => {
         fetchAllRecordsWithConsultations();
     }, []);
@@ -41,7 +48,7 @@ function App() {
         try {
             const recordsResponse = await axios.get(API_URL);
             const records = recordsResponse.data;
-            console.log('Records fetched:', records); // Log pour vérifier les données
+            console.log('Records fetched:', records);
 
             const recordsWithConsultations = await Promise.all(
                 records.map(async (record) => {
@@ -55,7 +62,7 @@ function App() {
                 })
             );
 
-            console.log('Records with consultations:', recordsWithConsultations); // Log après enrichissement
+            console.log('Records with consultations:', recordsWithConsultations);
             setMedicalRecords(recordsWithConsultations);
             setMessage({ text: 'Dossiers médicaux chargés avec succès', type: 'success' });
         } catch (error) {
@@ -106,7 +113,8 @@ function App() {
     const createRecord = async () => {
         try {
             const response = await axios.post(API_URL, formData);
-            setMedicalRecords([...medicalRecords, response.data]);
+            const newRecord = { ...response.data, consultations: [] };
+            setMedicalRecords([...medicalRecords, newRecord]);
             setMessage({ text: 'Dossier médical créé avec succès', type: 'success' });
             resetForm();
         } catch (error) {
@@ -132,6 +140,7 @@ function App() {
             setMedicalRecords(medicalRecords.filter(record => record.idRecord !== id));
             setMessage({ text: 'Dossier médical supprimé avec succès', type: 'success' });
             if (currentRecord && currentRecord.idRecord === id) setCurrentRecord(null);
+            if (currentPage > Math.ceil((medicalRecords.length - 1) / recordsPerPage)) setCurrentPage(currentPage - 1);
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
         }
@@ -242,7 +251,29 @@ function App() {
 
     const toggleDarkMode = () => {
         setDarkMode(prev => !prev);
-        console.log('Dark mode toggled:', !darkMode); // Log pour vérifier
+        console.log('Dark mode toggled:', !darkMode);
+    };
+
+    // Logique de pagination pour les dossiers médicaux
+    const indexOfLastRecord = currentPage * recordsPerPage;
+    const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+    const currentRecords = medicalRecords.slice(indexOfFirstRecord, indexOfLastRecord);
+    const totalPages = Math.ceil(medicalRecords.length / recordsPerPage);
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    // Gestion de l'affichage des consultations
+    const toggleConsultations = (recordId) => {
+        setExpandedConsultations(prev => ({
+            ...prev,
+            [recordId]: !prev[recordId]
+        }));
     };
 
     return (
@@ -331,58 +362,87 @@ function App() {
 
                     <section className="records-section">
                         <h2>Liste des dossiers médicaux ({medicalRecords.length})</h2>
-                        {medicalRecords.length > 0 ? (
-                            <div className="records-container">
-                                {medicalRecords.map((record) => (
-                                    <div className="record-card card" key={record._id}>
-                                        <div className="record-header">
-                                            <h3>Dossier #{record.idRecord}</h3>
-                                            <div className="record-actions">
-                                                <button className="edit-btn" onClick={() => handleEdit(record)}>Modifier</button>
-                                                <button className="delete-btn" onClick={() => deleteRecord(record.idRecord)}>Supprimer</button>
-                                                <button className="add-consultation-btn" onClick={() => { setConsultationFormData({ ...consultationFormData, medicalRecordId: record._id }); setShowConsultationForm(true); }}>Ajouter une consultation</button>
-                                                <button className="export-btn" onClick={() => handleExportPDF(record._id)} disabled={isExporting}>{isExporting ? 'Exportation...' : 'Exporter en PDF'}</button>
+                        {currentRecords.length > 0 ? (
+                            <>
+                                <div className="records-container">
+                                    {currentRecords.map((record) => (
+                                        <div className="record-card card" key={record._id}>
+                                            <div className="record-header">
+                                                <h3>Dossier #{record.idRecord}</h3>
+                                                <div className="record-actions">
+                                                    <button className="edit-btn" onClick={() => handleEdit(record)}>Modifier</button>
+                                                    <button className="delete-btn" onClick={() => deleteRecord(record.idRecord)}>Supprimer</button>
+                                                    <button className="add-consultation-btn" onClick={() => { setConsultationFormData({ ...consultationFormData, medicalRecordId: record._id }); setShowConsultationForm(true); }}>Ajouter une consultation</button>
+                                                    <button className="export-btn" onClick={() => handleExportPDF(record._id)} disabled={isExporting}>{isExporting ? 'Exportation...' : 'Exporter en PDF'}</button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="record-details">
-                                            <p><strong>Patient ID:</strong> {record.idPatient}</p>
-                                            <p><strong>Créé le:</strong> {formatDate(record.creationDate)}</p>
-                                            <p><strong>Dernière mise à jour:</strong> {formatDate(record.lastupdateDate)}</p>
-                                            <div className="record-section">
-                                                <h4>Allergies</h4>
-                                                <p>{record.allergies || 'Aucune allergie enregistrée'}</p>
-                                            </div>
-                                            <div className="record-section">
-                                                <h4>Médicaments</h4>
-                                                <p>{record.medications || 'Aucun médicament enregistré'}</p>
-                                            </div>
-                                            <div className="record-section">
-                                                <h4>Diagnostics</h4>
-                                                <p>{record.diagnostics || 'Aucun diagnostic enregistré'}</p>
-                                            </div>
-                                            <div className="record-section">
-                                                <h4>Consultations</h4>
-                                                {record.consultations && record.consultations.length > 0 ? (
-                                                    record.consultations.map((consultation) => (
-                                                        <div key={consultation._id} className="consultation-card card">
-                                                            <p><strong>Date:</strong> {formatDate(consultation.consultationDate)}</p>
-                                                            <p><strong>Médecin:</strong> {consultation.doctor}</p>
-                                                            <p><strong>Prescription:</strong> {consultation.prescription}</p>
-                                                            <p><strong>Traitement:</strong> {consultation.treatment}</p>
-                                                            <div className="consultation-actions">
-                                                                <button className="edit-btn" onClick={() => handleEditConsultation(consultation)}>Modifier</button>
-                                                                <button className="delete-btn" onClick={() => deleteConsultation(consultation._id, record._id)}>Supprimer</button>
+                                            <div className="record-details">
+                                                <p><strong>Patient ID:</strong> {record.idPatient}</p>
+                                                <p><strong>Créé le:</strong> {formatDate(record.creationDate)}</p>
+                                                <p><strong>Dernière mise à jour:</strong> {formatDate(record.lastupdateDate)}</p>
+                                                <div className="record-section">
+                                                    <h4>Allergies</h4>
+                                                    <p>{record.allergies || 'Aucune allergie enregistrée'}</p>
+                                                </div>
+                                                <div className="record-section">
+                                                    <h4>Médicaments</h4>
+                                                    <p>{record.medications || 'Aucun médicament enregistré'}</p>
+                                                </div>
+                                                <div className="record-section">
+                                                    <h4>Diagnostics</h4>
+                                                    <p>{record.diagnostics || 'Aucun diagnostic enregistré'}</p>
+                                                </div>
+                                                <div className="record-section">
+                                                    <h4>Consultations</h4>
+                                                    {record.consultations && record.consultations.length > 0 ? (
+                                                        <>
+                                                            {/* Afficher la première consultation par défaut */}
+                                                            <div className="consultation-card card">
+                                                                <p><strong>Date:</strong> {formatDate(record.consultations[0].consultationDate)}</p>
+                                                                <p><strong>Médecin:</strong> {record.consultations[0].doctor}</p>
+                                                                <p><strong>Prescription:</strong> {record.consultations[0].prescription}</p>
+                                                                <p><strong>Traitement:</strong> {record.consultations[0].treatment}</p>
+                                                                <div className="consultation-actions">
+                                                                    <button className="edit-btn" onClick={() => handleEditConsultation(record.consultations[0])}>Modifier</button>
+                                                                    <button className="delete-btn" onClick={() => deleteConsultation(record.consultations[0]._id, record._id)}>Supprimer</button>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p>Aucune consultation enregistrée</p>
-                                                )}
+                                                            {/* Flèche pour déplier toutes les consultations */}
+                                                            {record.consultations.length > 1 && (
+                                                                <div className="consultation-toggle">
+                                                                    <button onClick={() => toggleConsultations(record._id)} className="toggle-btn">
+                                                                        {expandedConsultations[record._id] ? 'Masquer' : 'Voir toutes les consultations'} ▼
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            {/* Afficher toutes les consultations si déplié */}
+                                                            {expandedConsultations[record._id] && record.consultations.slice(1).map((consultation) => (
+                                                                <div key={consultation._id} className="consultation-card card">
+                                                                    <p><strong>Date:</strong> {formatDate(consultation.consultationDate)}</p>
+                                                                    <p><strong>Médecin:</strong> {consultation.doctor}</p>
+                                                                    <p><strong>Prescription:</strong> {consultation.prescription}</p>
+                                                                    <p><strong>Traitement:</strong> {consultation.treatment}</p>
+                                                                    <div className="consultation-actions">
+                                                                        <button className="edit-btn" onClick={() => handleEditConsultation(consultation)}>Modifier</button>
+                                                                        <button className="delete-btn" onClick={() => deleteConsultation(consultation._id, record._id)}>Supprimer</button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </>
+                                                    ) : (
+                                                        <p>Aucune consultation enregistrée</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                                <div className="pagination">
+                                    <button onClick={handlePrevPage} disabled={currentPage === 1} className="pagination-btn">Précédent</button>
+                                    <span>Page {currentPage} / {totalPages}</span>
+                                    <button onClick={handleNextPage} disabled={currentPage === totalPages} className="pagination-btn">Suivant</button>
+                                </div>
+                            </>
                         ) : (
                             <p className="no-records">Aucun dossier médical trouvé</p>
                         )}

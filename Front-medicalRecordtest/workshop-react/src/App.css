@@ -586,3 +586,68 @@ body {
     align-items: flex-start;
   }
 }
+
+
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.pagination-btn:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+/* Consultation toggle */
+.consultation-toggle {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+  color: var(--primary-hover);
+}
+
+/* Ajustement pour les consultations */
+.consultation-card {
+  margin-bottom: 1rem;
+}
