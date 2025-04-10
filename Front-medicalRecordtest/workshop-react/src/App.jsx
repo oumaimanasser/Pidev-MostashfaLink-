@@ -14,10 +14,10 @@ function App() {
     const [medicalRecords, setMedicalRecords] = useState([]);
     const [currentRecord, setCurrentRecord] = useState(null);
     const [searchId, setSearchId] = useState('');
-    const [searchPatientId, setSearchPatientId] = useState('');
+    const [searchPatientName, setSearchPatientName] = useState('');
     const [formData, setFormData] = useState({
         idRecord: '',
-        idPatient: '',
+        patientName: '',
         allergies: '',
         medications: '',
         diagnostics: ''
@@ -41,7 +41,7 @@ function App() {
     const [expandedConsultations, setExpandedConsultations] = useState({});
     const [showChatbot, setShowChatbot] = useState(false);
     const [chatMessages, setChatMessages] = useState([
-        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "signes vitaux", ou "cls" pour effacer.' }
+        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "voir patient [nom]", "signes vitaux", ou "cls" pour effacer.' }
     ]);
     const [chatInput, setChatInput] = useState('');
     const [chatbotState, setChatbotState] = useState({
@@ -106,10 +106,10 @@ function App() {
         }
     };
 
-    const fetchRecordsByPatientId = async () => {
-        if (!searchPatientId) return;
+    const fetchRecordsByPatientName = async () => {
+        if (!searchPatientName) return;
         try {
-            const response = await axios.get(`${API_URL}/patient/${searchPatientId}`);
+            const response = await axios.get(`${API_URL}/patient/${encodeURIComponent(searchPatientName)}`);
             const records = response.data;
             const recordsWithConsultations = await Promise.all(
                 records.map(async (record) => {
@@ -250,7 +250,7 @@ function App() {
     const handleEdit = (record) => {
         setFormData({
             idRecord: record.idRecord,
-            idPatient: record.idPatient,
+            patientName: record.patientName,
             allergies: record.allergies,
             medications: record.medications,
             diagnostics: record.diagnostics
@@ -271,7 +271,7 @@ function App() {
         setShowConsultationForm(true);
     };
     const resetForm = () => {
-        setFormData({ idRecord: '', idPatient: '', allergies: '', medications: '', diagnostics: '' });
+        setFormData({ idRecord: '', patientName: '', allergies: '', medications: '', diagnostics: '' });
         setIsEditing(false);
         setCurrentRecord(null);
     };
@@ -300,13 +300,13 @@ function App() {
         try {
             const response = await axios.post('http://localhost:3001/api/vitals', {
                 idRecord: idRecord || undefined,
-                idPatient: formData.idPatient || 'inconnu',
+                patientName: formData.patientName || 'Inconnu',
                 vitals,
             });
             if (idRecord) {
                 setMedicalRecords((prev) =>
-                    prev.map(( рекорд ) =>
-                        рекорд.idRecord === idRecord ? { ...рекорд, vitals: { ...рекорд.vitals, ...vitals } } : рекорд
+                    prev.map((record) =>
+                        record.idRecord === idRecord ? { ...record, vitals: { ...record.vitals, ...vitals } } : record
                     )
                 );
             } else {
@@ -399,7 +399,7 @@ function App() {
             }
         } else if (input === 'nouveau dossier') {
             botResponse = 'Remplissez le formulaire à gauche pour créer un nouveau dossier médical.';
-            setFormData({ idRecord: '', idPatient: '', allergies: '', medications: '', diagnostics: '' });
+            setFormData({ idRecord: '', patientName: '', allergies: '', medications: '', diagnostics: '' });
             setIsEditing(false);
         } else if (input === 'nouvelle consultation') {
             botResponse = 'Choisissez un dossier dans la liste et cliquez sur "Ajouter une consultation".';
@@ -412,13 +412,22 @@ function App() {
             } else {
                 botResponse = `Dossier ${id} non trouvé. Vérifiez l’ID.`;
             }
+        } else if (input.startsWith('voir patient')) {
+            const name = input.split(' ').slice(2).join(' ');
+            if (name && medicalRecords.some(r => r.patientName.toLowerCase() === name.toLowerCase())) {
+                setSearchPatientName(name);
+                fetchRecordsByPatientName();
+                botResponse = `Dossiers pour ${name} chargés dans la liste.`;
+            } else {
+                botResponse = `Aucun dossier trouvé pour ${name}.`;
+            }
         } else if (input === 'combien de dossiers') {
             botResponse = `Il y a ${medicalRecords.length} dossiers enregistrés.`;
         } else if (input === 'signes vitaux') {
             botResponse = 'Avez-vous déjà un dossier médical ? (Oui/Non)';
             setChatbotState((prev) => ({ ...prev, askingRecord: true }));
         } else {
-            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "signes vitaux", ou "cls".';
+            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "voir patient [nom]", "signes vitaux", ou "cls".';
         }
 
         if (botResponse) {
@@ -465,16 +474,16 @@ function App() {
                             <input
                                 type="text"
                                 list="patientSuggestions"
-                                placeholder="Rechercher par ID du patient"
-                                value={searchPatientId}
-                                onChange={(e) => setSearchPatientId(e.target.value)}
+                                placeholder="Rechercher par nom du patient"
+                                value={searchPatientName}
+                                onChange={(e) => setSearchPatientName(e.target.value)}
                             />
                             <datalist id="patientSuggestions">
-                                {[...new Set(medicalRecords.map(record => record.idPatient))].map(idPatient => (
-                                    <option key={idPatient} value={idPatient.toString()} />
+                                {[...new Set(medicalRecords.map(record => record.patientName))].map(patientName => (
+                                    <option key={patientName} value={patientName} />
                                 ))}
                             </datalist>
-                            <button onClick={fetchRecordsByPatientId}>Rechercher</button>
+                            <button onClick={fetchRecordsByPatientName}>Rechercher</button>
                         </div>
                         <button onClick={fetchAllRecordsWithConsultations} className="reset-btn">Afficher tous les dossiers</button>
                     </div>
@@ -496,11 +505,11 @@ function App() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>ID du patient:</label>
+                                <label>Nom du patient:</label>
                                 <input
-                                    type="number"
-                                    name="idPatient"
-                                    value={formData.idPatient}
+                                    type="text"
+                                    name="patientName"
+                                    value={formData.patientName}
                                     onChange={handleInputChange}
                                     required
                                 />
@@ -576,7 +585,7 @@ function App() {
                                                 </div>
                                             </div>
                                             <div className="record-details">
-                                                <p><strong>Patient ID:</strong> {record.idPatient}</p>
+                                                <p><strong>Nom du patient:</strong> {record.patientName}</p>
                                                 <p><strong>Créé le:</strong> {formatDate(record.creationDate)}</p>
                                                 <p><strong>Dernière mise à jour:</strong> {formatDate(record.lastupdateDate)}</p>
                                                 <div className="record-section">

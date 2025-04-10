@@ -15,7 +15,7 @@ import http from 'http';
 import medicalRecordRoutes from './routes/medicalrecord.js';
 import consultationRoutes from './routes/consultation.js';
 import exportRoutes from './routes/exportRoutes.js';
-import MedicalRecord from './models/MedicalRecord.js'; // Importez le modèle
+import MedicalRecord from './models/MedicalRecord.js';
 
 dotenv.config();
 
@@ -65,9 +65,8 @@ io.on('connection', (socket) => {
 
 // Route pour sauvegarder les signes vitaux
 app.post('/api/vitals', async (req, res) => {
-    const { idRecord, idPatient, vitals } = req.body;
+    const { idRecord, patientName, vitals } = req.body;
 
-    // Si idRecord est fourni, on met à jour un dossier existant
     if (idRecord) {
         try {
             const record = await MedicalRecord.findOne({ idRecord });
@@ -83,14 +82,13 @@ app.post('/api/vitals', async (req, res) => {
         }
     }
 
-    // Si idRecord n'est pas fourni, on crée un nouveau dossier
-    if (!idPatient || !vitals) {
-        return res.status(400).json({ message: 'idPatient et signes vitaux requis pour un nouveau dossier' });
+    if (!patientName || !vitals) {
+        return res.status(400).json({ message: 'Nom du patient et signes vitaux requis pour un nouveau dossier' });
     }
     try {
         const newRecord = new MedicalRecord({
-            idRecord: Date.now(), // ou une logique pour générer un idRecord unique
-            idPatient,
+            idRecord: Date.now(),
+            patientName,
             vitals,
         });
         await newRecord.save();

@@ -30,7 +30,7 @@ export const exportMedicalRecordPDF = async (req, res) => {
         doc.moveDown();
 
         doc.fontSize(14)
-            .text(`Patient ID: ${medicalRecord.idPatient || 'Non spécifié'}`)
+            .text(`Nom patient: ${medicalRecord.patientName|| 'Non spécifié'}`)
             .text(`Numéro dossier: ${medicalRecord.idRecord || recordId}`)
             .text(`Créé le: ${medicalRecord.creationDate ? medicalRecord.creationDate.toLocaleDateString() : 'Non spécifié'}`);
         doc.moveDown();

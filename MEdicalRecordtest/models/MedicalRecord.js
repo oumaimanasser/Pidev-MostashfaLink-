@@ -6,8 +6,8 @@ const medicalRecordSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    idPatient: {
-        type: String, // Changé en String pour correspondre à app.js et éviter conflits
+    patientName: {
+        type: String,
         required: true,
     },
     creationDate: {
@@ -30,25 +30,23 @@ const medicalRecordSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
-    vitals: { // Ajouté pour la sauvegarde des signes vitaux
+    vitals: {
         type: Object,
         default: {},
     },
     consultations: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Consultation', // Référence au modèle Consultation
+        ref: 'Consultation',
     }],
 }, {
     timestamps: true,
 });
 
-// Mettre à jour la date de dernière modification avant de sauvegarder
 medicalRecordSchema.pre('save', function (next) {
     this.lastupdateDate = new Date();
     next();
 });
 
-// Éviter la redéfinition du modèle
 const MedicalRecord = mongoose.models.MedicalRecord || mongoose.model('MedicalRecord', medicalRecordSchema);
 
 export default MedicalRecord;
