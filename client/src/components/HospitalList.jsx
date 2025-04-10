@@ -1,16 +1,11 @@
-import React, { useState, useEffect ,useCallback } from "react";
-import { 
-
-  FaFire
-} from "react-icons/fa";
+import React, { useState, useEffect, useCallback } from "react";
+import { FaFire, FaCommentMedical, FaBell, FaPlus, FaSearch, FaExclamationTriangle, FaQrcode } from "react-icons/fa";
 import axios from "axios";
 import NotificationPanel from "./NotificationPanel";
 import "./HospitalList.css";
 import MapComponent from "./MapComponent";
-import { FaCommentMedical, FaBell, FaPlus, FaSearch, FaExclamationTriangle } from "react-icons/fa";
 import QRCode from "react-qr-code";
-import { FaQrcode } from "react-icons/fa";
-import { xml2js } from "xml-js"; // Changé de xml2json à xml2js
+import { xml2js } from "xml-js";
 
 const HospitalList = () => {
   // États principaux
@@ -52,16 +47,6 @@ const HospitalList = () => {
   const [showChat, setShowChat] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
-  // États pour les médecins
-  const [doctors, setDoctors] = useState([]);
-  const [showDoctorForm, setShowDoctorForm] = useState(false);
-  const [newDoctor, setNewDoctor] = useState({
-    name: "",
-    specialty: "",
-    available: true,
-    hospitalId: ""
-  });
-
   // Fonction pour ajouter une notification
   const addNotification = (message, type = 'info') => {
     const newNotification = {
@@ -78,7 +63,6 @@ const HospitalList = () => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  
   const fetchGDACSAlerts = useCallback(async () => {
     try {
       const response = await axios.get(
@@ -107,7 +91,6 @@ const HospitalList = () => {
         fromdate: item.pubDate._text,
         episodecountry: item['gdacs:episodecountry']._text || ''
       })).filter(alert => 
-        // Filtre pour la Tunisie seulement
         alert.country.toLowerCase().includes('tunisia') || 
         alert.episodecountry.toLowerCase().includes('tunisia')
       );
@@ -147,8 +130,7 @@ const HospitalList = () => {
 
   // Fonction pour calculer la distance entre un hôpital et une alerte
   const calculateDistanceFromAlert = (hospital, alert) => {
-    // Implémentation simplifiée - utiliser les coordonnées réelles dans une vraie application
-    return Math.random() * 150; // Distance aléatoire pour l'exemple
+    return Math.random() * 150;
   };
 
   // Fonction pour générer des réponses intelligentes
@@ -164,12 +146,10 @@ const HospitalList = () => {
       ).join(', ')}. Voir le panneau d'alertes pour détails.`;
     }
     
-    // Détection de salutations
     if (lowerQuestion.includes("bonjour") || lowerQuestion.includes("salut") || lowerQuestion.includes("hello")) {
       return "Bonjour ! Comment puis-je vous aider concernant les hôpitaux aujourd'hui ?";
     }
   
-    // Questions sur les distances entre hôpitaux
     if (lowerQuestion.includes("distance") || lowerQuestion.includes("loin") || lowerQuestion.includes("temps")) {
       const hospitalsInQuestion = hospitals.filter(h => 
         lowerQuestion.includes(h.name.toLowerCase())
@@ -185,31 +165,8 @@ const HospitalList = () => {
       return "Je peux vous informer sur les distances entre hôpitaux. Mentionnez deux hôpitaux dans votre question.";
     }
   
-    // Questions sur les médecins spécifiques
-    if (lowerQuestion.includes("médecin") || lowerQuestion.includes("docteur")) {
-      const hospitalMentioned = hospitals.find(h => 
-        lowerQuestion.includes(h.name.toLowerCase())
-      );
-      
-      if (hospitalMentioned) {
-        const hospitalDoctors = doctors.filter(d => d.hospitalId === hospitalMentioned._id);
-        const availableDoctors = hospitalDoctors.filter(d => d.available);
-        
-        if (availableDoctors.length === 0) {
-          return `Actuellement, aucun médecin n'est disponible à l'hôpital ${hospitalMentioned.name}.`;
-        }
-        
-        const specialties = [...new Set(availableDoctors.map(d => d.specialty))];
-        return `À l'hôpital ${hospitalMentioned.name}, il y a ${availableDoctors.length} médecins disponibles dans les spécialités suivantes : ${specialties.join(', ')}.`;
-      }
-      
-      return "Je peux vous informer sur les médecins disponibles. Veuillez préciser le nom de l'hôpital.";
-    }
-  
-    // Réponse par défaut plus utile
     return `Je suis un assistant spécialisé dans les informations hospitalières. Voici ce que je peux faire :
     - Donner des informations sur les lits disponibles
-    - Lister les médecins par hôpital
     - Indiquer les distances entre hôpitaux
     - Fournir les services disponibles
     - Afficher les alertes catastrophes
@@ -221,7 +178,6 @@ const HospitalList = () => {
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
   
-    // Ajouter le message utilisateur
     const userMessage = {
       id: Date.now(),
       text: newMessage,
@@ -234,7 +190,6 @@ const HospitalList = () => {
     setIsTyping(true);
     
     try {
-      // Attendre un peu pour le réalisme
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const aiResponse = await generateAIResponse(newMessage);
@@ -265,7 +220,6 @@ const HospitalList = () => {
       const res = await axios.get("http://localhost:5000/hospitals");
       const hospitalsData = res.data.map(h => ({ ...h, hasBeenNotified: false }));
       
-      // Récupérer les coordonnées pour chaque hôpital
       const locations = {};
       for (const hospital of hospitalsData) {
         const coords = await geocodeAddress(hospital.address);
@@ -299,8 +253,7 @@ const HospitalList = () => {
     const [lat1, lon1] = hospitalLocations[hospital1Id];
     const [lat2, lon2] = hospitalLocations[hospital2Id];
     
-    // Formule de Haversine
-    const R = 6371; // Rayon de la Terre en km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -324,16 +277,6 @@ const HospitalList = () => {
       }
     });
   }, [hospitals]);
-
-  // Fonction pour charger les médecins d'un hôpital
-  const fetchDoctors = async (hospitalId) => {
-    try {
-      const res = await axios.get(`http://localhost:5000/hospitals/${hospitalId}/doctors`);
-      setDoctors(res.data);
-    } catch (err) {
-      addNotification("Erreur lors du chargement des médecins", "error");
-    }
-  };
 
   // Pagination
   const indexOfLastHospital = currentPage * hospitalsPerPage;
@@ -392,12 +335,9 @@ const HospitalList = () => {
 
   const handleSelectHospital = async (hospital) => {
     setSelectedHospital(hospital);
-    setNewDoctor(prev => ({ ...prev, hospitalId: hospital._id }));
     try {
       const res = await axios.get(`http://localhost:5000/hospitals/hospitals/${hospital._id}/info`);
       setHospitalInfos(res.data);
-      await fetchDoctors(hospital._id);
-
       const coords = await geocodeAddress(hospital.address);
       setCoordinates(coords || null);
     } catch (err) {
@@ -426,38 +366,6 @@ const HospitalList = () => {
     return null;
   };
 
-  // Fonction pour gérer l'ajout/modification d'un médecin
-  const handleDoctorSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (newDoctor._id) {
-        await axios.put(`http://localhost:5000/hospitals/${newDoctor._id}`, newDoctor);
-        addNotification("Médecin mis à jour avec succès", "success");
-      } else {
-        await axios.post(`http://localhost:5000/hospitals/${newDoctor.hospitalId}/doctors`, newDoctor);
-        addNotification("Médecin ajouté avec succès", "success");
-      }
-      await fetchDoctors(newDoctor.hospitalId);
-      setShowDoctorForm(false);
-      setNewDoctor({ name: "", specialty: "", available: true, hospitalId: newDoctor.hospitalId });
-    } catch (err) {
-      addNotification("Erreur lors de l'opération sur le médecin", "error");
-    }
-  };
-
-  // Fonction pour supprimer un médecin
-  const handleDeleteDoctor = async (id) => {
-    if (window.confirm("Voulez-vous vraiment supprimer ce médecin ?")) {
-      try {
-        await axios.delete(`http://localhost:5000/hospitals/${id}`);
-        addNotification("Médecin supprimé avec succès", "success");
-        await fetchDoctors(selectedHospital._id);
-      } catch (err) {
-        addNotification("Erreur lors de la suppression du médecin", "error");
-      }
-    }
-  };
-
   // Chargement initial des données
   useEffect(() => {
     const fetchAllData = async () => {
@@ -470,7 +378,7 @@ const HospitalList = () => {
     };
 
     fetchAllData();
-    const interval = setInterval(fetchGDACSAlerts, 3600000); // Actualisation toutes les heures
+    const interval = setInterval(fetchGDACSAlerts, 3600000);
     return () => clearInterval(interval);
   }, []);
 
@@ -585,43 +493,42 @@ const HospitalList = () => {
       )}
 
       {/* Panneau d'alertes GDACS */}
-      {/* Panneau d'alertesfff*/}
       <div className="alerts-panel">
-  <h3>
-    <FaFire /> Alertes Incendies en Tunisie
-    {disasterAlerts.length > 0 && 
-      <span className="alert-badge">{disasterAlerts.length}</span>
-    }
-  </h3>
-  
-  {disasterAlerts.length === 0 ? (
-    <p>Aucun incendie signalé récemment en Tunisie</p>
-  ) : (
-    <ul>
-      {disasterAlerts.map(alert => (
-        <li key={alert.eventid} className={`alert-${alert.alertlevel}`}>
-          <div className="alert-header">
-            <FaFire className="fire-icon" />
-            <strong>{alert.eventname}</strong> 
-            <span className={`alert-level ${alert.alertlevel}`}>
-              ({alert.alertlevel === 'red' ? 'Haute' : 'Moyenne'} gravité)
-            </span>
-          </div>
-          <p><strong>Lieu:</strong> {alert.episodecountry || alert.country}</p>
-          <p><strong>Date:</strong> {new Date(alert.fromdate).toLocaleString()}</p>
-          {alert.alertlevel === "red" && (
-            <button 
-              onClick={() => activateEmergencyProtocol(alert)}
-              className="emergency-btn"
-            >
-              Activer le protocole d'urgence
-            </button>
-          )}
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
+        <h3>
+          <FaFire /> Alertes Incendies en Tunisie
+          {disasterAlerts.length > 0 && 
+            <span className="alert-badge">{disasterAlerts.length}</span>
+          }
+        </h3>
+        
+        {disasterAlerts.length === 0 ? (
+          <p>Aucun incendie signalé récemment en Tunisie</p>
+        ) : (
+          <ul>
+            {disasterAlerts.map(alert => (
+              <li key={alert.eventid} className={`alert-${alert.alertlevel}`}>
+                <div className="alert-header">
+                  <FaFire className="fire-icon" />
+                  <strong>{alert.eventname}</strong> 
+                  <span className={`alert-level ${alert.alertlevel}`}>
+                    ({alert.alertlevel === 'red' ? 'Haute' : 'Moyenne'} gravité)
+                  </span>
+                </div>
+                <p><strong>Lieu:</strong> {alert.episodecountry || alert.country}</p>
+                <p><strong>Date:</strong> {new Date(alert.fromdate).toLocaleString()}</p>
+                {alert.alertlevel === "red" && (
+                  <button 
+                    onClick={() => activateEmergencyProtocol(alert)}
+                    className="emergency-btn"
+                  >
+                    Activer le protocole d'urgence
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="header-section">
         <h2>Liste des Hôpitaux</h2>
@@ -647,59 +554,59 @@ const HospitalList = () => {
 
       {showForm && (
         <div className="form-popup">
-        <h3>{editingHospital ? "Modifier l'Hôpital" : "Ajouter un Hôpital"}</h3>
-        <form onSubmit={handleSubmit}>
-          <input 
-            type="text" 
-            name="name" 
-            placeholder="Nom de l'hôpital" 
-            value={newHospital.name} 
-            onChange={handleChange} 
-            required 
-          />
-          <input 
-            type="text" 
-            name="address" 
-            placeholder="Adresse complète" 
-            value={newHospital.address} 
-            onChange={handleChange} 
-            required 
-          />
-          <input 
-            type="text" 
-            name="phone" 
-            placeholder="Numéro de téléphone" 
-            value={newHospital.phone} 
-            onChange={handleChange} 
-            required 
-          />
-          <input 
-            type="number" 
-            name="capacity" 
-            placeholder="Capacité (nombre de lits)" 
-            value={newHospital.capacity} 
-            onChange={handleChange} 
-            required 
-            min="0"
-          />
-          <div className="form-actions">
-            <button type="submit">
-              {editingHospital ? "Enregistrer" : "Ajouter"}
-            </button>
-            <button 
-              type="button" 
-              onClick={() => {
-                setShowForm(false);
-                setEditingHospital(null);
-                setNewHospital({ name: "", address: "", phone: "", capacity: 0 });
-              }}
-              className="cancel-button"
-            >
-              Annuler
-            </button>
-          </div>
-        </form>
-      </div>
+          <h3>{editingHospital ? "Modifier l'Hôpital" : "Ajouter un Hôpital"}</h3>
+          <form onSubmit={handleSubmit}>
+            <input 
+              type="text" 
+              name="name" 
+              placeholder="Nom de l'hôpital" 
+              value={newHospital.name} 
+              onChange={handleChange} 
+              required 
+            />
+            <input 
+              type="text" 
+              name="address" 
+              placeholder="Adresse complète" 
+              value={newHospital.address} 
+              onChange={handleChange} 
+              required 
+            />
+            <input 
+              type="text" 
+              name="phone" 
+              placeholder="Numéro de téléphone" 
+              value={newHospital.phone} 
+              onChange={handleChange} 
+              required 
+            />
+            <input 
+              type="number" 
+              name="capacity" 
+              placeholder="Capacité (nombre de lits)" 
+              value={newHospital.capacity} 
+              onChange={handleChange} 
+              required 
+              min="0"
+            />
+            <div className="form-actions">
+              <button type="submit">
+                {editingHospital ? "Enregistrer" : "Ajouter"}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingHospital(null);
+                  setNewHospital({ name: "", address: "", phone: "", capacity: 0 });
+                }}
+                className="cancel-button"
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       <div className="hospital-list">
@@ -791,90 +698,6 @@ const HospitalList = () => {
           ) : (
             <p>Aucune information supplémentaire disponible.</p>
           )}
-
-          <h4>Médecins disponibles</h4>
-          {doctors.length > 0 ? (
-            <table className="doctors-table">
-              <thead>
-                <tr>
-                  <th>Nom</th>
-                  <th>Spécialité</th>
-                  <th>Disponibilité</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {doctors.map((doctor) => (
-                  <tr key={doctor._id}>
-                    <td>{doctor.name}</td>
-                    <td>{doctor.specialty}</td>
-                    <td>{doctor.available ? "Disponible" : "Non disponible"}</td>
-                    <td>
-                      <button onClick={() => {
-                        setNewDoctor(doctor);
-                        setShowDoctorForm(true);
-                      }}>Modifier</button>
-                      <button onClick={() => handleDeleteDoctor(doctor._id)}>Supprimer</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Aucun médecin enregistré pour cet hôpital.</p>
-          )}
-
-          <button onClick={() => setShowDoctorForm(true)}>Ajouter un médecin</button>
-
-          {showDoctorForm && (
-  <div className="form-popup doctor-form">
-    <h3>{newDoctor._id ? "Modifier le Médecin" : "Ajouter un Médecin"}</h3>
-    <form onSubmit={handleDoctorSubmit}>
-      <input 
-        type="text" 
-        name="name" 
-        placeholder="Nom complet" 
-        value={newDoctor.name} 
-        onChange={(e) => setNewDoctor({...newDoctor, name: e.target.value})} 
-        required 
-      />
-      <input 
-        type="text" 
-        name="specialty" 
-        placeholder="Spécialité médicale" 
-        value={newDoctor.specialty} 
-        onChange={(e) => setNewDoctor({...newDoctor, specialty: e.target.value})} 
-        required 
-      />
-      <div className="form-row">
-        <label>
-          Disponible:
-          <input 
-            type="checkbox" 
-            name="available" 
-            checked={newDoctor.available} 
-            onChange={(e) => setNewDoctor({...newDoctor, available: e.target.checked})} 
-          />
-        </label>
-      </div>
-      <div className="form-actions">
-        <button type="submit">
-          {newDoctor._id ? "Enregistrer" : "Ajouter"}
-        </button>
-        <button 
-          type="button" 
-          onClick={() => {
-            setShowDoctorForm(false);
-            setNewDoctor({ name: "", specialty: "", available: true, hospitalId: selectedHospital._id });
-          }}
-          className="cancel-button"
-        >
-          Annuler
-        </button>
-      </div>
-    </form>
-  </div>
-)}
 
           <button onClick={handleCloseDetails}>Fermer</button>
         </div>

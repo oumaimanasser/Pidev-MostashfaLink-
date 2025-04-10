@@ -16,63 +16,7 @@ const validateObjectId = (req, res, next) => {
 const router = express.Router();
 const Doctor = require('../models/Doctor');
 
-// Get doctors for a hospital
-router.get('/:hospitalId/doctors', async (req, res) => {
-  try {
-    const doctors = await Doctor.find({ hospitalId: req.params.hospitalId });
-    res.json(doctors);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-router.get('/doctors/all', async (req, res) => {
-  try {
-    const doctors = await Doctor.find();
-    res.json(doctors);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-// Add a new doctor
-router.post('/:hospitalId/doctors', async (req, res) => {
-  const doctor = new Doctor({
-    name: req.body.name,
-    specialty: req.body.specialty,
-    available: req.body.available,
-    hospitalId: req.params.hospitalId
-  });
 
-  try {
-    const newDoctor = await doctor.save();
-    res.status(201).json(newDoctor);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// Update a doctor
-router.put('/:id', async (req, res) => {
-  try {
-    const updatedDoctor = await Doctor.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json(updatedDoctor);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// Delete a doctor
-router.delete('/:id', async (req, res) => {
-  try {
-    await Doctor.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Doctor deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 
 
 
