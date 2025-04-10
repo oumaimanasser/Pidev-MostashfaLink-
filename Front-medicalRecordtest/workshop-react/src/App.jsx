@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaRobot } from 'react-icons/fa';
+import io from 'socket.io-client';
 import './App.css';
 import symptomsData from './SymptomsOutput.json';
 
 const API_URL = 'http://localhost:3001/api/medical-records';
 const CONSULTATION_API_URL = 'http://localhost:3001/api/consultations';
 const EXPORT_API_URL = 'http://localhost:3001/api/export';
+const socket = io('http://localhost:3001');
 
 function App() {
     const [medicalRecords, setMedicalRecords] = useState([]);
@@ -39,21 +41,21 @@ function App() {
     const [expandedConsultations, setExpandedConsultations] = useState({});
     const [showChatbot, setShowChatbot] = useState(false);
     const [chatMessages, setChatMessages] = useState([
-        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", ou "signes vitaux".' }
+        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "signes vitaux", ou "cls" pour effacer.' }
     ]);
     const [chatInput, setChatInput] = useState('');
     const [chatbotState, setChatbotState] = useState({
         askingVitals: false,
+        askingRecord: false,
         currentQuestionIndex: 0,
-        vitalResponses: {}
+        vitalResponses: {},
+        recordId: null,
     });
 
-    // Filtrer les questions des signes vitaux
     const vitalQuestions = symptomsData.filter(q =>
         ['Age', 'Temp', 'SBP', 'DBP'].includes(q.name)
     );
 
-    // Questions en français personnalisées
     const frenchVitalQuestions = {
         'Age': 'Quel est votre âge ?',
         'Temp': 'Quelle est votre température (prise avec un thermomètre auriculaire, en °F) ?',
@@ -63,6 +65,12 @@ function App() {
 
     useEffect(() => {
         fetchAllRecordsWithConsultations();
+
+        socket.on('vitalAlert', (data) => {
+            setMessage({ text: data.message, type: 'error' });
+        });
+
+        return () => socket.off('vitalAlert');
     }, []);
 
     const fetchAllRecordsWithConsultations = async () => {
@@ -288,39 +296,103 @@ function App() {
         setExpandedConsultations(prev => ({ ...prev, [recordId]: !prev[recordId] }));
     };
 
-    const handleChatSubmit = (e) => {
+    const saveVitalsToRecord = async (idRecord, vitals) => {
+        try {
+            const response = await axios.post('http://localhost:3001/api/vitals', {
+                idRecord: idRecord || undefined,
+                idPatient: formData.idPatient || 'inconnu',
+                vitals,
+            });
+            if (idRecord) {
+                setMedicalRecords((prev) =>
+                    prev.map(( рекорд ) =>
+                        рекорд.idRecord === idRecord ? { ...рекорд, vitals: { ...рекорд.vitals, ...vitals } } : рекорд
+                    )
+                );
+            } else {
+                setMedicalRecords((prev) => [...prev, response.data.record]);
+            }
+            return response.data.message;
+        } catch (error) {
+            return `Erreur lors de la sauvegarde : ${error.message}`;
+        }
+    };
+
+    const handleChatSubmit = async (e) => {
         e.preventDefault();
         if (!chatInput.trim()) return;
 
-        setChatMessages(prev => [...prev, { sender: 'user', text: chatInput }]);
+        setChatMessages((prev) => [...prev, { sender: 'user', text: chatInput }]);
         const input = chatInput.toLowerCase().trim();
 
         let botResponse = '';
 
-        if (chatbotState.askingVitals) {
+        if (input === 'cls') {
+            setChatMessages([{ sender: 'bot', text: 'Nouvelle conversation démarrée. Comment puis-je vous aider ?' }]);
+            setChatbotState({ askingVitals: false, askingRecord: false, currentQuestionIndex: 0, vitalResponses: {}, recordId: null });
+            botResponse = '';
+        } else if (chatbotState.askingRecord) {
+            if (input === 'oui') {
+                botResponse = 'Veuillez entrer l’ID du dossier médical (idRecord) :';
+                setChatbotState((prev) => ({ ...prev, askingRecord: true, askingVitals: false }));
+            } else if (input === 'non') {
+                botResponse = frenchVitalQuestions['Age'];
+                setChatbotState((prev) => ({ ...prev, askingRecord: false, askingVitals: true, currentQuestionIndex: 0 }));
+            } else if (!chatbotState.askingVitals && !isNaN(input)) {
+                const idRecord = parseInt(input);
+                const record = medicalRecords.find((r) => r.idRecord === idRecord);
+                if (record) {
+                    botResponse = frenchVitalQuestions['Age'];
+                    setChatbotState((prev) => ({
+                        ...prev,
+                        askingRecord: false,
+                        askingVitals: true,
+                        currentQuestionIndex: 0,
+                        recordId: idRecord,
+                    }));
+                } else {
+                    botResponse = 'Dossier non trouvé. Voulez-vous créer un nouveau dossier ? (Oui/Non)';
+                }
+            } else {
+                botResponse = 'Répondez par "Oui" ou "Non", ou entrez un ID valide.';
+            }
+        } else if (chatbotState.askingVitals) {
             const currentQuestion = vitalQuestions[chatbotState.currentQuestionIndex];
             const response = parseFloat(chatInput);
 
             if (!isNaN(response) && response >= currentQuestion.min && response <= currentQuestion.max) {
-                setChatbotState(prev => ({
+                setChatbotState((prev) => ({
                     ...prev,
-                    vitalResponses: { ...prev.vitalResponses, [currentQuestion.name]: response }
+                    vitalResponses: { ...prev.vitalResponses, [currentQuestion.name]: response },
                 }));
 
                 if (chatbotState.currentQuestionIndex < vitalQuestions.length - 1) {
                     const nextQuestion = vitalQuestions[chatbotState.currentQuestionIndex + 1];
                     botResponse = frenchVitalQuestions[nextQuestion.name];
-                    setChatbotState(prev => ({ ...prev, currentQuestionIndex: prev.currentQuestionIndex + 1 }));
+                    setChatbotState((prev) => ({ ...prev, currentQuestionIndex: prev.currentQuestionIndex + 1 }));
                 } else {
-                    const { Age, Temp, SBP, DBP } = { ...chatbotState.vitalResponses, [currentQuestion.name]: response };
+                    const vitals = { ...chatbotState.vitalResponses, [currentQuestion.name]: response };
+                    const { Age, Temp, SBP, DBP } = vitals;
                     botResponse = `Résumé de vos signes vitaux :\nÂge : ${Age} ans\nTempérature : ${Temp} °F\nTension : ${SBP}/${DBP} mmHg`;
 
-                    if (Temp > 100.4) botResponse += '\n⚠️ Température élevée, possible fièvre.';
-                    if (SBP >= 130 || DBP >= 80) botResponse += '\n⚠️ Tension élevée, consultez un médecin.';
-                    else if (SBP < 90 || DBP < 60) botResponse += '\n⚠️ Tension basse, attention.';
-                    else botResponse += '\nTout semble normal.';
+                    if (Temp > 100.4) {
+                        botResponse += '\n⚠️ Température élevée, possible fièvre.';
+                        socket.emit('criticalVital', { message: 'Température critique détectée !', vitals });
+                    }
+                    if (SBP >= 130 || DBP >= 80) {
+                        botResponse += '\n⚠️ Tension élevée, consultez un médecin.';
+                        socket.emit('criticalVital', { message: 'Tension artérielle élevée détectée !', vitals });
+                    } else if (SBP < 90 || DBP < 60) {
+                        botResponse += '\n⚠️ Tension basse, attention.';
+                        socket.emit('criticalVital', { message: 'Tension artérielle basse détectée !', vitals });
+                    } else {
+                        botResponse += '\nTout semble normal.';
+                    }
 
-                    setChatbotState({ askingVitals: false, currentQuestionIndex: 0, vitalResponses: {} });
+                    const saveResult = await saveVitalsToRecord(chatbotState.recordId, vitals);
+                    botResponse += `\n${saveResult}`;
+
+                    setChatbotState({ askingVitals: false, askingRecord: false, currentQuestionIndex: 0, vitalResponses: {}, recordId: null });
                 }
             } else {
                 botResponse = `Valeur invalide pour "${frenchVitalQuestions[currentQuestion.name]}". Entrez un nombre entre ${currentQuestion.min} et ${currentQuestion.max}.`;
@@ -343,13 +415,15 @@ function App() {
         } else if (input === 'combien de dossiers') {
             botResponse = `Il y a ${medicalRecords.length} dossiers enregistrés.`;
         } else if (input === 'signes vitaux') {
-            setChatbotState({ askingVitals: true, currentQuestionIndex: 0, vitalResponses: {} });
-            botResponse = frenchVitalQuestions['Age'];
+            botResponse = 'Avez-vous déjà un dossier médical ? (Oui/Non)';
+            setChatbotState((prev) => ({ ...prev, askingRecord: true }));
         } else {
-            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", ou "signes vitaux".';
+            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "signes vitaux", ou "cls".';
         }
 
-        setChatMessages(prev => [...prev, { sender: 'bot', text: botResponse }]);
+        if (botResponse) {
+            setChatMessages((prev) => [...prev, { sender: 'bot', text: botResponse }]);
+        }
         setChatInput('');
     };
 
@@ -516,6 +590,18 @@ function App() {
                                                 <div className="record-section">
                                                     <h4>Diagnostics</h4>
                                                     <p>{record.diagnostics || 'Aucun diagnostic enregistré'}</p>
+                                                </div>
+                                                <div className="record-section">
+                                                    <h4>Signes vitaux</h4>
+                                                    {record.vitals && Object.keys(record.vitals).length > 0 ? (
+                                                        <ul>
+                                                            {Object.entries(record.vitals).map(([key, value]) => (
+                                                                <li key={key}>{key}: {value}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p>Aucun signe vital enregistré</p>
+                                                    )}
                                                 </div>
                                                 <div className="record-section">
                                                     <h4>Consultations</h4>
