@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaRobot } from 'react-icons/fa'; // Import de l'icône
+import { FaRobot } from 'react-icons/fa';
 import './App.css';
+import symptomsData from './SymptomsOutput.json';
 
 const API_URL = 'http://localhost:3001/api/medical-records';
 const CONSULTATION_API_URL = 'http://localhost:3001/api/consultations';
@@ -38,9 +39,27 @@ function App() {
     const [expandedConsultations, setExpandedConsultations] = useState({});
     const [showChatbot, setShowChatbot] = useState(false);
     const [chatMessages, setChatMessages] = useState([
-        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", ou "voir dossier [ID]".' }
+        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", ou "signes vitaux".' }
     ]);
     const [chatInput, setChatInput] = useState('');
+    const [chatbotState, setChatbotState] = useState({
+        askingVitals: false,
+        currentQuestionIndex: 0,
+        vitalResponses: {}
+    });
+
+    // Filtrer les questions des signes vitaux
+    const vitalQuestions = symptomsData.filter(q =>
+        ['Age', 'Temp', 'SBP', 'DBP'].includes(q.name)
+    );
+
+    // Questions en français personnalisées
+    const frenchVitalQuestions = {
+        'Age': 'Quel est votre âge ?',
+        'Temp': 'Quelle est votre température (prise avec un thermomètre auriculaire, en °F) ?',
+        'SBP': 'Quelle est votre tension artérielle systolique (le chiffre du haut, ex. 120 dans 120/80) ?',
+        'DBP': 'Quelle est votre tension artérielle diastolique (le chiffre du bas, ex. 80 dans 120/80) ?'
+    };
 
     useEffect(() => {
         fetchAllRecordsWithConsultations();
@@ -276,8 +295,37 @@ function App() {
         setChatMessages(prev => [...prev, { sender: 'user', text: chatInput }]);
         const input = chatInput.toLowerCase().trim();
 
-        let botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", ou "voir dossier [ID]".';
-        if (input === 'nouveau dossier') {
+        let botResponse = '';
+
+        if (chatbotState.askingVitals) {
+            const currentQuestion = vitalQuestions[chatbotState.currentQuestionIndex];
+            const response = parseFloat(chatInput);
+
+            if (!isNaN(response) && response >= currentQuestion.min && response <= currentQuestion.max) {
+                setChatbotState(prev => ({
+                    ...prev,
+                    vitalResponses: { ...prev.vitalResponses, [currentQuestion.name]: response }
+                }));
+
+                if (chatbotState.currentQuestionIndex < vitalQuestions.length - 1) {
+                    const nextQuestion = vitalQuestions[chatbotState.currentQuestionIndex + 1];
+                    botResponse = frenchVitalQuestions[nextQuestion.name];
+                    setChatbotState(prev => ({ ...prev, currentQuestionIndex: prev.currentQuestionIndex + 1 }));
+                } else {
+                    const { Age, Temp, SBP, DBP } = { ...chatbotState.vitalResponses, [currentQuestion.name]: response };
+                    botResponse = `Résumé de vos signes vitaux :\nÂge : ${Age} ans\nTempérature : ${Temp} °F\nTension : ${SBP}/${DBP} mmHg`;
+
+                    if (Temp > 100.4) botResponse += '\n⚠️ Température élevée, possible fièvre.';
+                    if (SBP >= 130 || DBP >= 80) botResponse += '\n⚠️ Tension élevée, consultez un médecin.';
+                    else if (SBP < 90 || DBP < 60) botResponse += '\n⚠️ Tension basse, attention.';
+                    else botResponse += '\nTout semble normal.';
+
+                    setChatbotState({ askingVitals: false, currentQuestionIndex: 0, vitalResponses: {} });
+                }
+            } else {
+                botResponse = `Valeur invalide pour "${frenchVitalQuestions[currentQuestion.name]}". Entrez un nombre entre ${currentQuestion.min} et ${currentQuestion.max}.`;
+            }
+        } else if (input === 'nouveau dossier') {
             botResponse = 'Remplissez le formulaire à gauche pour créer un nouveau dossier médical.';
             setFormData({ idRecord: '', idPatient: '', allergies: '', medications: '', diagnostics: '' });
             setIsEditing(false);
@@ -294,6 +342,11 @@ function App() {
             }
         } else if (input === 'combien de dossiers') {
             botResponse = `Il y a ${medicalRecords.length} dossiers enregistrés.`;
+        } else if (input === 'signes vitaux') {
+            setChatbotState({ askingVitals: true, currentQuestionIndex: 0, vitalResponses: {} });
+            botResponse = frenchVitalQuestions['Age'];
+        } else {
+            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", ou "signes vitaux".';
         }
 
         setChatMessages(prev => [...prev, { sender: 'bot', text: botResponse }]);
@@ -620,7 +673,6 @@ function App() {
                     </div>
                 )}
 
-                {/* Bouton avec icône FaRobot */}
                 <button onClick={() => setShowChatbot(!showChatbot)} className="chatbot-icon-btn" title={showChatbot ? 'Fermer le chatbot' : 'Ouvrir le chatbot'}>
                     <FaRobot size={40} color="#28a745" />
                 </button>
@@ -643,7 +695,7 @@ function App() {
                                 type="text"
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
-                                placeholder="Ex. : nouveau dossier"
+                                placeholder="Ex. : signes vitaux"
                             />
                             <button type="submit">Envoyer</button>
                         </form>
