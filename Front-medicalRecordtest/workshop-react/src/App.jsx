@@ -12,11 +12,11 @@ const socket = io('http://localhost:3001');
 
 function App() {
     const [medicalRecords, setMedicalRecords] = useState([]);
+    const [allRecords, setAllRecords] = useState([]);
     const [currentRecord, setCurrentRecord] = useState(null);
-    const [searchId, setSearchId] = useState('');
     const [searchPatientName, setSearchPatientName] = useState('');
+    const [filterCreationDate, setFilterCreationDate] = useState('');
     const [formData, setFormData] = useState({
-        idRecord: '',
         patientName: '',
         allergies: '',
         medications: '',
@@ -41,7 +41,7 @@ function App() {
     const [expandedConsultations, setExpandedConsultations] = useState({});
     const [showChatbot, setShowChatbot] = useState(false);
     const [chatMessages, setChatMessages] = useState([
-        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "voir patient [nom]", "signes vitaux", ou "cls" pour effacer.' }
+        { sender: 'bot', text: 'Bonjour, infirmière ! Essayez "nouveau dossier", "nouvelle consultation", "voir patient [nom]", "signes vitaux", ou "cls" pour effacer.' }
     ]);
     const [chatInput, setChatInput] = useState('');
     const [chatbotState, setChatbotState] = useState({
@@ -83,6 +83,7 @@ function App() {
                     return { ...record, consultations: consultationsResponse.data || [] };
                 })
             );
+            setAllRecords(recordsWithConsultations);
             setMedicalRecords(recordsWithConsultations);
             setMessage({ text: 'Dossiers médicaux chargés avec succès', type: 'success' });
         } catch (error) {
@@ -90,24 +91,11 @@ function App() {
         }
     };
 
-    const fetchRecordById = async () => {
-        if (!searchId) return;
-        try {
-            const response = await axios.get(`${API_URL}/${searchId}`);
-            const record = response.data;
-            const consultationsResponse = await axios.get(`${CONSULTATION_API_URL}/${record._id}/consultations`);
-            const recordWithConsultations = { ...record, consultations: consultationsResponse.data };
-            setCurrentRecord(recordWithConsultations);
-            setMedicalRecords([recordWithConsultations]);
-            setMessage({ text: 'Dossier médical trouvé', type: 'success' });
-        } catch (error) {
-            setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
-            setCurrentRecord(null);
-        }
-    };
-
     const fetchRecordsByPatientName = async () => {
-        if (!searchPatientName) return;
+        if (!searchPatientName) {
+            applyFilters();
+            return;
+        }
         try {
             const response = await axios.get(`${API_URL}/patient/${encodeURIComponent(searchPatientName)}`);
             const records = response.data;
@@ -124,13 +112,49 @@ function App() {
         }
     };
 
+    const applyFilters = () => {
+        let filteredRecords = [...allRecords];
+
+        // Filtrer par date de création
+        if (filterCreationDate) {
+            const selectedDate = new Date(filterCreationDate);
+            selectedDate.setHours(0, 0, 0, 0); // Réinitialiser l'heure à minuit
+            console.log('Date sélectionnée pour filtrage:', selectedDate.toISOString().split('T')[0]);
+
+            filteredRecords = filteredRecords.filter(record => {
+                const creationDate = new Date(record.creationDate);
+                creationDate.setHours(0, 0, 0, 0); // Réinitialiser l'heure à minuit
+                console.log('Date de création du dossier:', creationDate.toISOString().split('T')[0]);
+                return creationDate.getTime() === selectedDate.getTime();
+            });
+
+            if (filteredRecords.length === 0) {
+                setMessage({ text: 'Aucun dossier trouvé pour cette date', type: 'warning' });
+            } else {
+                setMessage({ text: `${filteredRecords.length} dossier(s) trouvé(s) pour cette date`, type: 'success' });
+            }
+        }
+
+        // Filtrer par nom du patient
+        if (searchPatientName) {
+            filteredRecords = filteredRecords.filter(record =>
+                record.patientName.toLowerCase().includes(searchPatientName.toLowerCase())
+            );
+        }
+
+        setMedicalRecords(filteredRecords);
+        setCurrentPage(1); // Réinitialiser la pagination
+    };
+
     const createRecord = async () => {
         try {
             const response = await axios.post(API_URL, formData);
             const newRecord = { ...response.data, consultations: [] };
+            setAllRecords([...allRecords, newRecord]);
             setMedicalRecords([...medicalRecords, newRecord]);
             setMessage({ text: 'Dossier médical créé avec succès', type: 'success' });
             resetForm();
+            applyFilters(); // Réappliquer les filtres après création
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
         }
@@ -138,11 +162,14 @@ function App() {
 
     const updateRecord = async () => {
         try {
-            const response = await axios.put(`${API_URL}/${formData.idRecord}`, formData);
-            setMedicalRecords(medicalRecords.map(record => record.idRecord === formData.idRecord ? response.data : record));
+            const response = await axios.put(`${API_URL}/${currentRecord.idRecord}`, formData);
+            const updatedRecord = response.data;
+            setAllRecords(allRecords.map(record => record.idRecord === currentRecord.idRecord ? updatedRecord : record));
+            setMedicalRecords(medicalRecords.map(record => record.idRecord === currentRecord.idRecord ? updatedRecord : record));
             setMessage({ text: 'Dossier médical mis à jour avec succès', type: 'success' });
             setIsEditing(false);
             resetForm();
+            applyFilters(); // Réappliquer les filtres après mise à jour
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
         }
@@ -151,10 +178,12 @@ function App() {
     const deleteRecord = async (id) => {
         try {
             await axios.delete(`${API_URL}/${id}`);
+            setAllRecords(allRecords.filter(record => record.idRecord !== id));
             setMedicalRecords(medicalRecords.filter(record => record.idRecord !== id));
             setMessage({ text: 'Dossier médical supprimé avec succès', type: 'success' });
             if (currentRecord && currentRecord.idRecord === id) setCurrentRecord(null);
             if (currentPage > Math.ceil((medicalRecords.length - 1) / recordsPerPage)) setCurrentPage(currentPage - 1);
+            applyFilters(); // Réappliquer les filtres après suppression
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
         }
@@ -170,6 +199,7 @@ function App() {
                 }
                 return record;
             });
+            setAllRecords(updatedRecords);
             setMedicalRecords(updatedRecords);
             setMessage({ text: 'Consultation ajoutée avec succès', type: 'success' });
             resetConsultationForm();
@@ -181,14 +211,14 @@ function App() {
     const deleteConsultation = async (consultationId, medicalRecordId) => {
         try {
             await axios.delete(`${CONSULTATION_API_URL}/${consultationId}`);
-            setMedicalRecords(prevRecords =>
-                prevRecords.map(record => {
-                    if (record._id === medicalRecordId) {
-                        return { ...record, consultations: record.consultations.filter(c => c._id !== consultationId) };
-                    }
-                    return record;
-                })
-            );
+            const updatedRecords = medicalRecords.map(record => {
+                if (record._id === medicalRecordId) {
+                    return { ...record, consultations: record.consultations.filter(c => c._id !== consultationId) };
+                }
+                return record;
+            });
+            setAllRecords(updatedRecords);
+            setMedicalRecords(updatedRecords);
             setMessage({ text: 'Consultation supprimée avec succès', type: 'success' });
         } catch (error) {
             setMessage({ text: `Erreur: ${error.response?.data?.message || error.message}`, type: 'error' });
@@ -198,17 +228,17 @@ function App() {
     const updateConsultation = async () => {
         try {
             const response = await axios.put(`${CONSULTATION_API_URL}/${editingConsultation._id}`, consultationFormData);
-            setMedicalRecords(prevRecords =>
-                prevRecords.map(record => {
-                    if (record._id === consultationFormData.medicalRecordId) {
-                        return {
-                            ...record,
-                            consultations: record.consultations.map(c => c._id === editingConsultation._id ? response.data : c)
-                        };
-                    }
-                    return record;
-                })
-            );
+            const updatedRecords = medicalRecords.map(record => {
+                if (record._id === consultationFormData.medicalRecordId) {
+                    return {
+                        ...record,
+                        consultations: record.consultations.map(c => c._id === editingConsultation._id ? response.data : c)
+                    };
+                }
+                return record;
+            });
+            setAllRecords(updatedRecords);
+            setMedicalRecords(updatedRecords);
             setMessage({ text: 'Consultation mise à jour avec succès', type: 'success' });
             resetConsultationForm();
         } catch (error) {
@@ -249,7 +279,6 @@ function App() {
     };
     const handleEdit = (record) => {
         setFormData({
-            idRecord: record.idRecord,
             patientName: record.patientName,
             allergies: record.allergies,
             medications: record.medications,
@@ -271,7 +300,7 @@ function App() {
         setShowConsultationForm(true);
     };
     const resetForm = () => {
-        setFormData({ idRecord: '', patientName: '', allergies: '', medications: '', diagnostics: '' });
+        setFormData({ patientName: '', allergies: '', medications: '', diagnostics: '' });
         setIsEditing(false);
         setCurrentRecord(null);
     };
@@ -282,6 +311,7 @@ function App() {
     };
     const formatDate = (dateString) => new Date(dateString).toLocaleString();
     const toggleDarkMode = () => setDarkMode(prev => !prev);
+
     const indexOfLastRecord = currentPage * recordsPerPage;
     const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
     const currentRecords = medicalRecords.slice(indexOfFirstRecord, indexOfLastRecord);
@@ -309,9 +339,16 @@ function App() {
                         record.idRecord === idRecord ? { ...record, vitals: { ...record.vitals, ...vitals } } : record
                     )
                 );
+                setAllRecords((prev) =>
+                    prev.map((record) =>
+                        record.idRecord === idRecord ? { ...record, vitals: { ...record.vitals, ...vitals } } : record
+                    )
+                );
             } else {
                 setMedicalRecords((prev) => [...prev, response.data.record]);
+                setAllRecords((prev) => [...prev, response.data.record]);
             }
+            applyFilters(); // Réappliquer les filtres après ajout des signes vitaux
             return response.data.message;
         } catch (error) {
             return `Erreur lors de la sauvegarde : ${error.message}`;
@@ -340,7 +377,7 @@ function App() {
                 setChatbotState((prev) => ({ ...prev, askingRecord: false, askingVitals: true, currentQuestionIndex: 0 }));
             } else if (!chatbotState.askingVitals && !isNaN(input)) {
                 const idRecord = parseInt(input);
-                const record = medicalRecords.find((r) => r.idRecord === idRecord);
+                const record = allRecords.find((r) => r.idRecord === idRecord);
                 if (record) {
                     botResponse = frenchVitalQuestions['Age'];
                     setChatbotState((prev) => ({
@@ -399,22 +436,13 @@ function App() {
             }
         } else if (input === 'nouveau dossier') {
             botResponse = 'Remplissez le formulaire à gauche pour créer un nouveau dossier médical.';
-            setFormData({ idRecord: '', patientName: '', allergies: '', medications: '', diagnostics: '' });
+            setFormData({ patientName: '', allergies: '', medications: '', diagnostics: '' });
             setIsEditing(false);
         } else if (input === 'nouvelle consultation') {
             botResponse = 'Choisissez un dossier dans la liste et cliquez sur "Ajouter une consultation".';
-        } else if (input.startsWith('voir dossier')) {
-            const id = input.split(' ')[2];
-            if (id && medicalRecords.some(r => r.idRecord.toString() === id)) {
-                setSearchId(id);
-                fetchRecordById();
-                botResponse = `Dossier ${id} chargé dans la liste.`;
-            } else {
-                botResponse = `Dossier ${id} non trouvé. Vérifiez l’ID.`;
-            }
         } else if (input.startsWith('voir patient')) {
             const name = input.split(' ').slice(2).join(' ');
-            if (name && medicalRecords.some(r => r.patientName.toLowerCase() === name.toLowerCase())) {
+            if (name && allRecords.some(r => r.patientName.toLowerCase() === name.toLowerCase())) {
                 setSearchPatientName(name);
                 fetchRecordsByPatientName();
                 botResponse = `Dossiers pour ${name} chargés dans la liste.`;
@@ -422,12 +450,12 @@ function App() {
                 botResponse = `Aucun dossier trouvé pour ${name}.`;
             }
         } else if (input === 'combien de dossiers') {
-            botResponse = `Il y a ${medicalRecords.length} dossiers enregistrés.`;
+            botResponse = `Il y a ${allRecords.length} dossiers enregistrés.`;
         } else if (input === 'signes vitaux') {
             botResponse = 'Avez-vous déjà un dossier médical ? (Oui/Non)';
             setChatbotState((prev) => ({ ...prev, askingRecord: true }));
         } else {
-            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir dossier [ID]", "voir patient [nom]", "signes vitaux", ou "cls".';
+            botResponse = 'Je ne comprends pas. Essayez "nouveau dossier", "nouvelle consultation", "voir patient [nom]", "signes vitaux", ou "cls".';
         }
 
         if (botResponse) {
@@ -457,18 +485,15 @@ function App() {
                     <div className="search-container">
                         <div className="search-group">
                             <input
-                                type="text"
-                                list="recordSuggestions"
-                                placeholder="Rechercher par ID du dossier"
-                                value={searchId}
-                                onChange={(e) => setSearchId(e.target.value)}
+                                type="date"
+                                value={filterCreationDate}
+                                onChange={(e) => {
+                                    setFilterCreationDate(e.target.value);
+                                    applyFilters(); // Appliquer le filtre immédiatement
+                                }}
+                                placeholder="Filtrer par date de création"
                             />
-                            <datalist id="recordSuggestions">
-                                {medicalRecords.map(record => (
-                                    <option key={record._id} value={record.idRecord.toString()} />
-                                ))}
-                            </datalist>
-                            <button onClick={fetchRecordById}>Rechercher</button>
+                            <button onClick={() => { setFilterCreationDate(''); applyFilters(); }}>Réinitialiser</button>
                         </div>
                         <div className="search-group">
                             <input
@@ -476,10 +501,13 @@ function App() {
                                 list="patientSuggestions"
                                 placeholder="Rechercher par nom du patient"
                                 value={searchPatientName}
-                                onChange={(e) => setSearchPatientName(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchPatientName(e.target.value);
+                                    applyFilters(); // Appliquer le filtre immédiatement
+                                }}
                             />
                             <datalist id="patientSuggestions">
-                                {[...new Set(medicalRecords.map(record => record.patientName))].map(patientName => (
+                                {[...new Set(allRecords.map(record => record.patientName))].map(patientName => (
                                     <option key={patientName} value={patientName} />
                                 ))}
                             </datalist>
@@ -493,17 +521,6 @@ function App() {
                     <section className="form-section card">
                         <h2>{isEditing ? 'Modifier un dossier médical' : 'Créer un nouveau dossier médical'}</h2>
                         <form onSubmit={handleSubmit}>
-                            <div className="form-group">
-                                <label>ID du dossier:</label>
-                                <input
-                                    type="number"
-                                    name="idRecord"
-                                    value={formData.idRecord}
-                                    onChange={handleInputChange}
-                                    required
-                                    disabled={isEditing}
-                                />
-                            </div>
                             <div className="form-group">
                                 <label>Nom du patient:</label>
                                 <input

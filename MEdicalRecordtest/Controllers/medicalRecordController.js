@@ -35,11 +35,20 @@ export const getMedicalRecordsByPatientId = async (req, res) => {
 
 export const createMedicalRecord = async (req, res) => {
     try {
-        const existingRecord = await MedicalRecord.findOne({ idRecord: req.body.idRecord });
-        if (existingRecord) {
-            return res.status(400).json({ message: 'A medical record with this ID already exists' });
+        const { patientName, allergies, medications, diagnostics } = req.body;
+        if (!patientName) {
+            return res.status(400).json({ message: 'Le nom du patient est requis' });
         }
-        const newMedicalRecord = new MedicalRecord(req.body);
+
+        const newIdRecord = Date.now(); // Génération automatique de l'idRecord
+        const newMedicalRecord = new MedicalRecord({
+            idRecord: newIdRecord,
+            patientName,
+            allergies: allergies || '',
+            medications: medications || '',
+            diagnostics: diagnostics || '',
+        });
+
         const savedMedicalRecord = await newMedicalRecord.save();
         res.status(201).json(savedMedicalRecord);
     } catch (error) {
