@@ -32,26 +32,18 @@ pipeline {
             }
         }
 
-
-
-        }
-stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('MySonarQubeServer') {
                     sh """
                         sonar-scanner \
                         -Dsonar.projectKey=node \
                         -Dsonar.sources=. \
-                        -Dsonar.login=${tokensonar}
+                        -Dsonar.login=${SONAR_TOKEN}
                     """
                 }
             }
         }
-    }
-
-
-    
-
     }
 
     post {
