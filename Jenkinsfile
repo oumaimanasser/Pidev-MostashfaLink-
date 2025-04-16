@@ -1,9 +1,7 @@
 pipeline {
     agent any
 
-    environment {
-        SONAR_SCANNER_HOME = tool 'MySonarQubeServer'
-    }
+    
 
     stages {
         stage('Install dependencies') {
@@ -23,18 +21,17 @@ pipeline {
                 sh 'npm run build'
             }
         }
-
-        stage('SonarQube Analysis') {
-            steps {
-                sh """
-                    ${env.SONAR_SCANNER_HOME}/bin/tokensonar \
-                      -Dsonar.projectKey=node\
-                      -Dsonar.projectName=nodeapp\
-                      -Dsonar.projectVersion=1.0 \
-                      -Dsonar.sources=.
-                """
-            }
-        }
+stage('SonarQube Analysis') { 
+steps{ 
+script {   
+def scannerHome = tool 'MySonarQubeServer' 
+withSonarQubeEnv { 
+sh "${scannerHome}/bin/sonar-scanner" 
+} 
+}  
+}   
+}
+        
     }
 
     post {
