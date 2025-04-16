@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONAR_SCANNER_HOME = tool 'MySonarQubeServer'  // Vérifie que ce nom correspond à l'installation dans Jenkins
+        SONAR_SCANNER_HOME = tool 'MySonarQubeServer'
+        SONAR_TOKEN = credentials('tokensonar')  // ID du secret dans Jenkins
     }
 
     stages {
@@ -28,10 +29,12 @@ pipeline {
             steps {
                 sh """
                     ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                      -Dsonar.projectKey=node\
-                      -Dsonar.projectName=nodeapp\
+                      -Dsonar.projectKey=nodeapp \
+                      -Dsonar.projectName=nodeapp \
                       -Dsonar.projectVersion=1.0 \
-                      -Dsonar.sources=.
+                      -Dsonar.sources=. \
+                      -Dsonar.login=${env.tokensonar} \
+                      -Dsonar.host.url=http://localhost:9000
                 """
             }
         }
@@ -46,4 +49,3 @@ pipeline {
         }
     }
 }
-
