@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_SCANNER_HOME = tool 'SonarScanner' // Assure-toi que c'est bien installé dans Jenkins (Manage Jenkins > Global Tool Configuration)
+        SONAR_SCANNER_HOME = tool 'MySonarQubeServer' // Assure-toi que c'est bien installé dans Jenkins (Manage Jenkins > Global Tool Configuration)
     }
 
     stages {
