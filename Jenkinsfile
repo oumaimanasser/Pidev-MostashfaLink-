@@ -24,18 +24,14 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('MySonarQubeServer') {
-                    sh "${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=nodeapp\
-                        -Dsonar.projectName=nodeapp \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.token=$"tokensonar"
-                }
-            }
-        }
+        sh """
+${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
+  -Dsonar.projectKey=MyProjectKey \
+  -Dsonar.projectName=MyProject \
+  -Dsonar.projectVersion=1.0 \
+  -Dsonar.sources=.
+"""
+
     }
 
     post {
