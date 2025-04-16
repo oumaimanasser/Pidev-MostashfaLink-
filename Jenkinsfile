@@ -28,8 +28,8 @@ pipeline {
             steps {
                 sh """
                     ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                      -Dsonar.projectKey=MyProjectKey \
-                      -Dsonar.projectName=MyProject \
+                      -Dsonar.projectKey=node\
+                      -Dsonar.projectName=nodeapp \
                       -Dsonar.projectVersion=1.0 \
                       -Dsonar.sources=.
                 """
