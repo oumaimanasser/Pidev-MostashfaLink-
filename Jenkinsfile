@@ -27,7 +27,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 sh """
-                    ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                    ${env.SONAR_SCANNER_HOME}/bin/tokensonar \
                       -Dsonar.projectKey=node\
                       -Dsonar.projectName=nodeapp\
                       -Dsonar.projectVersion=1.0 \
