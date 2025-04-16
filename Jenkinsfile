@@ -39,7 +39,7 @@ pipeline {
                         sonar-scanner \
                         -Dsonar.projectKey=node \
                         -Dsonar.sources=. \
-                        -Dsonar.login=${SONAR_TOKEN}
+                        -Dsonar.login=${tokensonar}
                     """
                 }
             }
