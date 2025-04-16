@@ -32,59 +32,26 @@ pipeline {
             }
         }
 
-       stage('SonarQube Analysis') {
-    steps {
-        script {
-            def scannerHome = tool 'sonar-token' // "scanner" est le nom configuré dans Jenkins > Global Tool Configuration
-            withSonarQubeEnv('SonarQubeServer') { // "SonarQubeServer" = nom configuré dans Jenkins > Configure System
-                sh "${scannerHome}/bin/sonar-sonar-token " +
-                   "-Dsonar.projectKey=nodeapp " +
-                   "-Dsonar.sources=. " +
-                   "-Dsonar.host.url=http://localhost:9000 " +
-                   "-Dsonar.login=${SONAR_TOKEN}"
-            }
+
+
         }
-    }
-}
-
-
-        stage('Build Docker Image') {
+stage('SonarQube Analysis') {
             steps {
-                script {
-                    docker.build("nadrawertani/mostashfalink:${BUILD_NUMBER}")
-                }
-            }
-        }
-
-        stage('Docker Login') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                sh "docker push nadrawertani/mostashfalink:${BUILD_NUMBER}"
-                sh "docker tag nadrawertani/mostashfalink:${BUILD_NUMBER} nadrawertani/mostashfalink:latest"
-                sh "docker push nadrawertani/mostashfalink:latest"
-            }
-        }
-
-        stage('Grafana Monitoring') {
-            steps {
-                script {
-                    def status = currentBuild.currentResult == 'SUCCESS' ? 1 : 0
+                withSonarQubeEnv('MySonarQubeServer') {
                     sh """
-                        cat <<EOF | curl --data-binary @- http://localhost:9090/metrics/job/${env.JOB_NAME}/build/${env.BUILD_NUMBER}
-                        # TYPE jenkins_build_status gauge
-                        jenkins_build_status{job="${env.JOB_NAME}",build="${env.BUILD_NUMBER}"} ${status}
-                        EOF
+                        sonar-scanner \
+                        -Dsonar.projectKey=node \
+                        -Dsonar.sources=. \
+                        -Dsonar.login=${tokensonar}
                     """
                 }
             }
         }
+    }
+
+
+    
+
     }
 
     post {
