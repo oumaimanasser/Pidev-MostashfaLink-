@@ -32,19 +32,21 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQubeServer') {
-                    sh """
-                        sonar-scanner \
-                        -Dsonar.projectKey=MostashfaLink \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.login=$SONAR_TOKEN
-                    """
-                }
+       stage('SonarQube Analysis') {
+    steps {
+        script {
+            def scannerHome = tool 'sonar-token' // "scanner" est le nom configuré dans Jenkins > Global Tool Configuration
+            withSonarQubeEnv('SonarQubeServer') { // "SonarQubeServer" = nom configuré dans Jenkins > Configure System
+                sh "${scannerHome}/bin/sonar-sonar-token " +
+                   "-Dsonar.projectKey=nodeapp " +
+                   "-Dsonar.sources=. " +
+                   "-Dsonar.host.url=http://localhost:9000 " +
+                   "-Dsonar.login=${SONAR_TOKEN}"
             }
         }
+    }
+}
+
 
         stage('Build Docker Image') {
             steps {
