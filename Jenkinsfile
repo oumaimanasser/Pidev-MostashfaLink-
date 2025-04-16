@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         SONAR_SCANNER_HOME = tool 'MySonarQubeServer'
-        SONAR_TOKEN = credentials('tokensonar')  // ID du secret dans Jenkins
+        SONAR_TOKEN = credentials('sonar-token')  // ID du secret dans Jenkins
     }
 
     stages {
@@ -33,7 +33,7 @@ pipeline {
                       -Dsonar.projectName=nodeapp \
                       -Dsonar.projectVersion=1.0 \
                       -Dsonar.sources=. \
-                      -Dsonar.login=${env.tokensonar} \
+                      -Dsonar.login=${env.SONAR_TOKEN} \
                       -Dsonar.host.url=http://localhost:9000
                 """
             }
