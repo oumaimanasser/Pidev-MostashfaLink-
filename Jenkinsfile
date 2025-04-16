@@ -2,25 +2,17 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN = credentials('sonar-token')
+        SONAR_SCANNER_HOME = tool 'SonarScanner' // Assure-toi que c'est bien installé dans Jenkins (Manage Jenkins > Global Tool Configuration)
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git credentialsId: 'git-creds-id',
-                    branch: 'main',
-                    url: 'https://github.com/oumaimanasser/Pidev-MostashfaLink-.git'
-            }
-        }
-
         stage('Install dependencies') {
             steps {
                 sh 'npm install'
             }
         }
 
-        stage('Run Unit Tests') {
+        stage('Run tests') {
             steps {
                 sh 'npm test'
             }
@@ -35,29 +27,24 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('MySonarQubeServer') {
-                    sh """
-                        sonar-scanner \
-                        -Dsonar.projectKey=node \
+                    sh "${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=nodeapp\
+                        -Dsonar.projectName=nodeapp \
                         -Dsonar.sources=. \
-                        -Dsonar.login=${tokensonar}
-                    """
+                        -Dsonar.host.url=http://localhost:9000 \
+                        -Dsonar.token=$SONAR_TOKEN"
                 }
             }
         }
     }
 
     post {
-        success {
-            mail to: 'werteninadra@gmail.com',
-                 subject: "✅ Pipeline réussie : ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "La pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} a été exécutée avec succès.\nConsultez les logs : ${env.BUILD_URL}"
-            echo 'Pipeline exécutée avec succès'
-        }
         failure {
-            mail to: 'werteninadra@gmail.com',
-                 subject: "❌ Échec de la pipeline : ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "La pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} a échoué.\nConsultez les logs : ${env.BUILD_URL}"
             echo 'La pipeline a échoué'
+            mail to: 'nadrawertani22@gmail.com',
+                 subject: "Échec du pipeline: ${currentBuild.fullDisplayName}",
+                 body: "Vérifie les logs Jenkins: ${env.BUILD_URL}"
         }
     }
 }
+
