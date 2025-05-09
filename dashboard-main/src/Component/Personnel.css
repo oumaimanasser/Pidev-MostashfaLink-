@@ -1,0 +1,90 @@
+.personnel-container {
+    padding: 20px;
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+.form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: calc(33% - 10px);
+}
+
+.add-btn {
+    background-color: #2ECC71;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.add-btn:hover {
+    background-color: #27AE60;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+th {
+    background-color: #f4f4f4;
+}
+
+.delete-btn {
+    background-color: #E74C3C;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.delete-btn:hover {
+    background-color: #C0392B;
+}
+react-datepicker-wrapper {
+    width: 100%;
+}
+
+.react-datepicker__input-container input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+td .react-datepicker-wrapper {
+    margin: 0;
+}
+
+td .delete-btn {
+    background-color: #E74C3C;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+td .delete-btn:hover {
+    background-color: #C0392B;
+}

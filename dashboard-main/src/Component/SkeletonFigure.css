@@ -1,0 +1,42 @@
+.skeleton-container {
+    background-color: #f8f7f7;
+    border-radius: 12px;
+    padding: 15px;
+    color: #00f2ff;
+    max-width: 800px;
+    margin: 30px auto;
+    box-shadow: 0 0 20px #00f2ff;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+  }
+  
+  .skeleton-wrapper {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .skeleton-img {
+    width: 100%;
+    border-radius: 10px;
+  }
+  
+  .scan-line {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    width: 2px;
+    height: 300%;
+    background-color: #00f2ff;
+    box-shadow: 0 0 15px #00f2ff;
+    animation: scanMove 3s linear infinite;
+  }
+  
+  @keyframes scanMove {
+    0% {
+      top: -100%;
+    }
+    100% {
+      top: 100%;
+    }
+  }
+  

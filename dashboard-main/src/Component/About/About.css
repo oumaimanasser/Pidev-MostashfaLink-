@@ -1,0 +1,131 @@
+/* About.css */
+.about-container {
+  max-width: 1200px;
+  margin: 100px auto;
+  padding: 0 20px;
+}
+
+.about {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 80px;
+  gap: 40px;
+}
+
+.about-left {
+  flex: 1;
+}
+
+.about-right {
+  flex: 1;
+}
+
+.About_img {
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.About_img:hover {
+  transform: scale(1.02);
+}
+
+.about h2 {
+  font-weight: 600;
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.about p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+  color: #555;
+}
+
+/* Vision Section */
+.vision-section {
+  background-color: #f8f9fa;
+  padding: 60px;
+  border-radius: 10px;
+  margin-bottom: 80px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.vision-section h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #2c3e50;
+}
+
+.vision-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Team Section */
+.team-section {
+  margin-bottom: 80px;
+}
+
+.team-section h2 {
+  text-align: center;
+  margin-bottom: 50px;
+  color: #2c3e50;
+}
+
+.team-members {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.team-member {
+  flex: 1;
+  min-width: 250px;
+  max-width: 300px;
+  text-align: center;
+  background: #fff;
+  padding: 30px 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.team-member:hover {
+  transform: translateY(-10px);
+}
+
+.team-member img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border: 5px solid #f8f9fa;
+}
+
+.team-member h3 {
+  margin: 10px 0;
+  color: #2c3e50;
+}
+
+.team-member p {
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .about {
+    flex-direction: column;
+  }
+  
+  .team-member {
+    min-width: 100%;
+  }
+}

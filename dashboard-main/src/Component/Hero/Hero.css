@@ -1,0 +1,68 @@
+/* Pour la page ForgotPassword */
+.Hero {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(rgba(116, 108, 164, 0.7), rgba(8,0,58,0.7)), url('../../assests/acc.png');
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.Hero-text {
+  text-align: center;
+  max-width: 800px;
+}
+
+.Hero-text h1 {
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.Hero-text p {
+  max-width: 700px;
+  margin: 10px auto 20px;
+  line-height: 1.4;
+}
+
+.wrapper {
+  width: 100%;
+  border-radius: 12px;
+  padding: 30px 40px;
+}
+
+.input-box input {
+  width: 100%;
+  height: 50px;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 40px;
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.wrapper .btn {
+  width: 100%;
+  height: 50px;
+  background: #fff;
+  border-radius: 40px;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.register-link p a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.register-link p a:hover {
+  text-decoration: underline;
+}

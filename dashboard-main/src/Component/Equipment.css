@@ -1,0 +1,62 @@
+.equipment-container {
+    padding: 20px;
+  }
+  
+  h2 {
+    margin-bottom: 20px;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  th {
+    background-color: #f2f2f2;
+  }
+  
+  .add-btn {
+    background-color: #2ECC71;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  
+  .add-btn:hover {
+    background-color: #27AE60;
+  }
+  
+  .delete-btn {
+    background-color: #E74C3C;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .delete-btn:hover {
+    background-color: #C0392B;
+  }
+  
+  .form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
