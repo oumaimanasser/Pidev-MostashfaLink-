@@ -17,7 +17,7 @@ pipeline {
 
         stage('Run tests') {
             steps {
-                dir('frontend') {
+                dir('dashboard-main') {
                     sh 'npm test'
                 }
             }
@@ -25,7 +25,7 @@ pipeline {
 
         stage('Build application') {
             steps {
-                dir('frontend') {
+                dir('dashboard-main') {
                     sh 'npm run build'
                 }
             }
@@ -33,7 +33,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                dir('frontend') {
+                dir('dashboard-main') {
                     sh """
                         ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
                           -Dsonar.projectKey=nodeapp \
