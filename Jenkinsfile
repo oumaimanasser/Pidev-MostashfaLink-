@@ -3,39 +3,47 @@ pipeline {
 
     environment {
         SONAR_SCANNER_HOME = tool 'MySonarQubeServer'
-        SONAR_TOKEN = credentials('sonar-token')  // ID du secret dans Jenkins
+        SONAR_TOKEN = credentials('sonar-token')
     }
 
     stages {
         stage('Install dependencies') {
             steps {
-                sh 'npm install'
+                dir('frontend') {
+                    sh 'npm install'
+                }
             }
         }
 
         stage('Run tests') {
             steps {
-                sh 'npm test'
+                dir('frontend') {
+                    sh 'npm test'
+                }
             }
         }
 
         stage('Build application') {
             steps {
-                sh 'npm run build'
+                dir('frontend') {
+                    sh 'npm run build'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh """
-                    ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                      -Dsonar.projectKey=nodeapp \
-                      -Dsonar.projectName=nodeapp \
-                      -Dsonar.projectVersion=1.0 \
-                      -Dsonar.sources=. \
-                      -Dsonar.login=${env.SONAR_TOKEN} \
-                      -Dsonar.host.url=http://localhost:9000
-                """
+                dir('frontend') {
+                    sh """
+                        ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                          -Dsonar.projectKey=nodeapp \
+                          -Dsonar.projectName=nodeapp \
+                          -Dsonar.projectVersion=1.0 \
+                          -Dsonar.sources=. \
+                          -Dsonar.login=${env.SONAR_TOKEN} \
+                          -Dsonar.host.url=http://localhost:9000
+                    """
+                }
             }
         }
     }
@@ -49,3 +57,4 @@ pipeline {
         }
     }
 }
+
