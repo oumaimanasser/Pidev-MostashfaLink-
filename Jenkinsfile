@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Install dependencies') {
             steps {
-                dir('fdashboard-main') {
+                dir('dashboard-main') {
                     sh 'npm install'
                 }
             }
