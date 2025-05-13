@@ -1,0 +1,174 @@
+/* Style principal pour la barre de navigation d'urgence */
+.emergency-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #eaa3a9; /* Rouge vif comme dans l'image */
+    padding: 0.5rem 2rem;
+    color: white;
+  }
+  
+  /* Logo et section urgences */
+  .left-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .emergency-logo {
+    height: 40px;
+    width: auto;
+  }
+  
+  .urgences-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .urgences-section h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  
+  .badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+  }
+  
+  /* Liens de navigation */
+  .nav-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .nav-link {
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    padding: 0.7rem 1rem;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .services, .waiting-time, .find-emergency {
+    line-height: 1.2;
+  }
+  
+  .waiting-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .clock-icon {
+    font-size: 1.2rem;
+  }
+  
+  .connexion {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Barre des numéros d'urgence */
+  .emergency-numbers {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    background-color: #1e293b; /* Bleu foncé presque noir */
+    color: white;
+    padding: 0.7rem 0;
+  }
+  
+  .number-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+  }
+  
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #10b981; /* Vert pour indiquer disponible */
+    border-radius: 50%;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 1100px) {
+    .emergency-navbar {
+      flex-direction: column;
+      padding: 1rem;
+    }
+    
+    .nav-links {
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    
+    .emergency-numbers {
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 0.5rem;
+    }
+  }nav{
+    width: 100%;
+    /* background : transparent; */
+    color: rgb(48, 33, 160); 
+    padding: 4px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 999;
+}
+.logo{
+    width: 50px;
+    mix-blend-mode:multiply;
+
+}
+nav ul li{
+    display: inline-block;
+    list-style: none;
+    margin: 5px 20px;
+    font-size: 16px;
+    color: rgb(255, 255, 255);
+}
+
+
+.btn{
+    background: #FFF;
+    color: #212121;
+    padding: 14px 25px;
+    font-size: 16px;
+    border-radius: 15px;
+    cursor: pointer;
+    border: 0;
+    outline: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+.dark-nav{
+    background: #f7b2e6;
+    transition: 0.5s;
+    z-index: 999;
+    color: white;
+}

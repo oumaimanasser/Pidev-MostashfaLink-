@@ -1,0 +1,636 @@
+/* Importation des polices */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #e63946;
+  --primary-dark: #d02331;
+  --secondary-color: #4355b9;
+  --dark-blue: #1e293b;
+  --light-text: #ffffff;
+  --dark-text: #333333;
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --alert-green: #10b981;
+  --alert-yellow: #f59e0b;
+  --alert-red: #ef4444;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+/* Réinitialisation CSS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Structure générale de la page */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+}
+
+/* Barre de navigation d'urgence */
+.emergency-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  padding: 0.8rem 2.5rem;
+  color: var(--light-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 10;
+}
+
+/* Logo et section urgences */
+.left-section {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--light-text);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+}
+
+.logo-container:hover {
+  transform: scale(1.05);
+}
+
+.logo-icon {
+  color: var(--primary-color);
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.urgences-section {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.urgences-section h2 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.7rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.badge {
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: var(--transition);
+}
+
+.badge:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Liens de navigation */
+.nav-links {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.nav-link {
+  background: none;
+  border: none;
+  color: var(--light-text);
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+  background-color: rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: all 0.5s ease;
+}
+
+.nav-link:hover::before {
+  left: 100%;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link:active {
+  transform: translateY(0);
+}
+
+.services, .waiting-time, .find-emergency {
+  line-height: 1.3;
+}
+
+.waiting-time {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.clock-icon {
+  font-size: 1.3rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.connexion {
+  background-color: rgba(255, 255, 255, 0.25);
+  font-weight: 700;
+}
+
+.connexion:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Barre des numéros d'urgence */
+.emergency-numbers {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  background-color: var(--dark-blue);
+  color: var(--light-text);
+  padding: 0.9rem 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 5;
+}
+
+.number-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  transition: var(--transition);
+}
+
+.number-item:hover {
+  transform: scale(1.05);
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  background-color: var(--alert-green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 5px rgba(16, 185, 129, 0.6); }
+  to { box-shadow: 0 0 12px rgba(16, 185, 129, 0.8); }
+}
+
+/* Contenu principal avec fond bleu et formulaire */
+.login-content {
+  flex-grow: 1;
+  background: linear-gradient(135deg, rgba(67, 85, 185, 0.85), rgba(51, 65, 143, 0.9)), 
+              url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-1.2.1&auto=format&fit=crop&q=80') center/cover no-repeat;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--light-text);
+  position: relative;
+}
+
+.login-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.2) 100%);
+  pointer-events: none;
+}
+
+/* Texte héros */
+.hero-text {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeInDown 1s ease;
+  max-width: 850px;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-text h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 2.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Bouton Explore-more */
+.explore-more-btn {
+  background-color: var(--light-text);
+  color: var(--dark-text);
+  border: none;
+  padding: 0.9rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: var(--transition);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Montserrat', sans-serif;
+  margin: 0 auto;
+}
+
+.explore-more-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.explore-more-btn:active {
+  transform: translateY(-1px);
+}
+
+.explore-more-btn img {
+  width: 22px;
+  height: auto;
+  transition: var(--transition);
+}
+
+.explore-more-btn:hover img {
+  transform: translateX(5px);
+}
+
+/* Formulaire de connexion */
+.login-form-container {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  animation: fadeIn 1s ease 0.3s both;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.error-message {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: white;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.input-box {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 1.2rem 1.5rem;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  font-size: 1.05rem;
+  box-sizing: border-box;
+  background-color: var(--input-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: var(--transition);
+  font-family: 'Poppins', sans-serif;
+}
+
+.input-box input:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 4px rgba(67, 85, 185, 0.15);
+}
+
+.input-box input::placeholder {
+  color: #888;
+}
+
+/* Options du formulaire (Remember Me et Forgot Password) */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--light-text);
+  font-weight: 500;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--secondary-color);
+  cursor: pointer;
+}
+
+.forgot-link {
+  background: none;
+  border: none;
+  color: var(--light-text);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
+  font-size: 0.95rem;
+}
+
+.forgot-link:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Bouton de connexion */
+.login-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--light-text), #f5f5f5);
+  color: var(--dark-text);
+  border: none;
+  padding: 1.2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: var(--transition);
+  font-family: 'Montserrat', sans-serif;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  transition: all 0.6s ease;
+}
+
+.login-btn:hover::before {
+  left: 100%;
+}
+
+.login-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.login-btn:active {
+  transform: translateY(-1px);
+}
+
+.login-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Lien d'enregistrement */
+.register-link {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--light-text);
+  font-weight: 500;
+}
+
+.text-button {
+  background: none;
+  border: none;
+  color: var(--light-text);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.text-button:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Séparateur */
+.separator {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  color: var(--light-text);
+}
+
+.separator::before, .separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.separator::before {
+  margin-right: 1rem;
+}
+
+.separator::after {
+  margin-left: 1rem;
+}
+
+/* Bouton Google */
+.google-login {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.google-login button {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  background-color: #4285F4;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+}
+
+.google-login button:hover {
+  background-color: #3367d6;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(66, 133, 244, 0.4);
+}
+
+.google-login button:active {
+  transform: translateY(-1px);
+}
+
+.google-login button:disabled {
+  background-color: #7eaaf7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Icon pour Google */
+.google-icon {
+  font-size: 1.2rem;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .emergency-navbar {
+    padding: 0.8rem 1.5rem;
+  }
+  
+  .nav-links {
+    gap: 0.8rem;
+  }
+  
+  .nav-link {
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .hero-text h1 {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 1000px) {
+  .emergency-navbar {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .left-section {
+    margin-bottom: 1rem;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+  }
+  
+  .emergency-numbers {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+  
+  .hero-text h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-text h1 {
+    font-size: 1.8rem;
+  }
+  
+  .login-form-container {
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+  
+  .login-content {
+    padding: 2rem 1rem;
+  }
+  
+  .emergency-numbers {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  
+  .nav-link {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
